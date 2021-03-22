@@ -1,8 +1,9 @@
 import json
 import ccxt
 import time
+import db
 
-class autotranding():
+class Autotranding():
     def __init__(self,order_symbol,order_type,order_price,order_side,num,exchange):
         self.order_symbol = order_symbol
         self.order_type = order_type

@@ -29,8 +29,9 @@ class Controldb():
         fin_db = self.db[self.db_col].find(data)
         return fin_db
     
-    def db_change(self):
-        chg_db = self.db[self.db_col].update()
+    def db_change(self,query,data):
+        chg_db = self.db[self.db_col].update_one(query,data)
+        return chg_db
     
     def db_del(self):
         pass

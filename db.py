@@ -30,7 +30,7 @@ class Controldb():
         return fin_db
     
     def db_change(self):
-        pass
+        chg_db = self.db[self.db_col].update()
     
     def db_del(self):
         pass

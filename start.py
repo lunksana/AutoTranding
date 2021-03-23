@@ -1,17 +1,21 @@
+'''
+* 本程序现阶段只针对币安永续合约
+* 参数配置：仓位控制（资金分割份数），止损比例，价格追踪，最大杠杆
+* 基于上述参数，程序将自动基于行情进行多空操作，实现盈利
+* 
+'''
+
 import json
 import ccxt
 import time
 import db
 
 class Autotranding():
-    def __init__(self,order_symbol,order_type,order_price,order_side,num,exchange):
-        self.order_symbol = order_symbol
-        self.order_type = order_type
-        self.order_price = order_price
-        self.order_side = order_side
-        self.num = num
-        self.exchange = exchange
+    def __init__(self, position_control, sl_ratio, price_track, max_leverage):
+        self.position_control = position_control
+        self.sl_ratio = sl_ratio
+        self.price_track = price_track
+        self.max_leverage
     
-    def init_exchange(self):
-        bn = ccxt.binance()
-        return bn
+    def start(self):
+        pass

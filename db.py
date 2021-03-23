@@ -1,3 +1,5 @@
+#使用MongoDB作为主要的数据库存储方案，对于数据库的操作建立相关的函数调用
+
 import pymongo
 
 class Newdb():
@@ -17,7 +19,7 @@ class Controldb():
         self.db = db
         self.db_col = db_col
     
-    
+#数据库插入内容
     def db_insert(self,data):
         if isinstance(type(data),dict):
             ins_db = self.db[self.db_col].insert_one(data)
@@ -25,22 +27,31 @@ class Controldb():
             ins_db = self.db[self.db_col].insert_many(data)
         return ins_db
 
+#数据库查找
     def db_find(self,data):
         fin_db = self.db[self.db_col].find(data)
         return fin_db
-    
+
+#修改数据库内容    
     def db_change(self,query,data):
         chg_db = self.db[self.db_col].update_one(query,data)
         return chg_db
-    
-    def db_del(self):
-        pass
-    
-    def db_max(self):
-        pass
-    
-    def db_min(self):
-        pass
+
+#删除数据库内容    
+    def db_del(self,data):
+        del_db = self.db[self.db_col].remove(data)
+        return del_db
+
+#查询数据库内数据极值    
+    def db_extreme(self,mod,data):
+        if mod == "max":
+            db_data = self.db[self.db_col].find(data)
+        elif mod == "min":
+            db_data = self.db[self.db_col].find(data)
+        else:
+            db_data = self.db[self.db_col].find(data)
+        return db_data
+
 
 # mydb = Newdb('172.16.1.2',27017,'python')
 # db_data = [{'key1':1,"key2":2,"key3":3},{'key1':3,"key2":4,"key3":8}]

@@ -5,8 +5,7 @@
 * 
 '''
 
-import json
-import ccxt
+import control
 import time
 import db
 
@@ -15,7 +14,7 @@ class Autotranding():
         self.position_control = position_control
         self.sl_ratio = sl_ratio
         self.price_track = price_track
-        self.max_leverage
+        self.max_leverage = max_leverage
     
     def start(self):
-        pass
+# 进行文件判断，读取json文件，如果json内容位空即进行初始化操作

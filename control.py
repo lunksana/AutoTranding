@@ -30,7 +30,7 @@ class Db_ctr():
         run_info = Json_ctr(json_file)
         get_run_info = run_info.json_read()
         print(get_run_info)
-        the_db = Newdb(get_run_info['addr'],get_run_info['port'],get_run_info['db'])
+        the_db = db.Newdb(get_run_info['addr'],get_run_info['port'],get_run_info['db'])
 
     
       

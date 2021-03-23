@@ -26,8 +26,12 @@ class Db_ctr():
         print("开始进行运行参数配置！")
         print("*" * 20)
      
-    def start_start(self):
-        pass 
+    def start_start(self, db_cha):
+        run_info = Json_ctr(json_file)
+        get_run_info = run_info.json_read()
+        print(get_run_info)
+        the_db = Newdb(get_run_info['addr'],get_run_info['port'],get_run_info['db'])
+
     
       
             

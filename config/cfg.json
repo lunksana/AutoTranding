@@ -1,11 +1,13 @@
 {
     "db": "Binance",
-    "addr": "",
-    "port": "",
+    "mongodb": {
+        "addr": "",
+        "port": ""
+    },    
     "collections": {
-        "user_info": "",
+        "user_api": "",
         "order_list": "",
-        "kline": "",
-        "run_info": ""
-    }
+        "kline_list": "",
+        "sys_conf": ""
+    }   
 }

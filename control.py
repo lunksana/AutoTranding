@@ -24,14 +24,12 @@ class Json_ctr():
 
 class Db_ctr():
     def __init__(self):
-        print("开始进行运行参数配置！")
-        print("*" * 20)
+        pass
      
-    def start_start(self, db_cha):
-        run_info = Json_ctr()
-        get_run_info = run_info.json_read()
+    def start_start(self, db_chr):
+        get_run_info = Json_ctr().json_read()
         print(get_run_info)
-        the_db = db.Newdb(get_run_info['addr'],get_run_info['port'],get_run_info['db'])
+        the_db = db.Newdb(get_run_info['mongodb']['addr'],get_run_info['mongodb']['port'],get_run_info['db'])
         the_new_col = input("请输入新的修改单元：")
         db.Controldb.db_change()
 

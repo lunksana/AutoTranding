@@ -3,15 +3,17 @@
 import pymongo
 
 class Newdb():
-    def __init__(self,db_addr,db_port,db_name):
-        self.db_addr = db_addr
-        self.db_port = db_port
+    def __init__(self,mongodb,db_name):
+        self.mongodb = mongodb
         self.db_name = db_name
     
     def init_db(self):
-        db_client = pymongo.MongoClient(self.db_addr,self.db_port)
-        db = db_client[self.db_name]
-        return db
+        if isinstance(self.mongodb,dict):
+            db = pymongo.MongoClient(self.mongodb['addr'],self.mongodb['port'])[self.db_name]
+            return db
+        else:
+            print("输入类型错误")
+            exit()
         
     
 class Controldb():

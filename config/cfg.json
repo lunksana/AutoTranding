@@ -9,5 +9,6 @@
         "order_list": "",
         "kline_list": "",
         "sys_conf": ""
-    }   
+    },
+    "configured": false  
 }

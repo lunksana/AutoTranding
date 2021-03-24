@@ -2,10 +2,10 @@
     "db": "Binance",
     "addr": "",
     "port": "",
-    "collections": {
-        "user_info": "",
-        "order_list": "",
-        "kline": "",
-        "run_info": ""
-    }
+    "collections": [
+        "user_info",
+        "order_list",
+        "kline",
+        "run_info"
+    ]   
 }

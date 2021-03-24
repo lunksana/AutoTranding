@@ -5,9 +5,9 @@
 * 
 '''
 
-import json
 import ccxt
 import time
+import control
 import db
 
 class Autotranding():
@@ -18,4 +18,5 @@ class Autotranding():
         self.max_leverage
     
     def start(self):
-        pass
+        print("请确保cfg.json已按照要求填写完成！！")
+        

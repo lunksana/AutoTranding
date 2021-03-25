@@ -5,7 +5,7 @@
         "port": ""
     },    
     "collections": {
-        "user_api": "",
+        "bn_api": "",
         "order_list": "",
         "kline_list": "",
         "sys_conf": ""

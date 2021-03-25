@@ -20,7 +20,7 @@ class Json_ctr():
         with open(cls.json_file,'w') as cfg:
             json.dump(data,cfg)
             cfg.close()
-            print("Data has been updated!")
+            print("配置信息已更新！")
 
 class Db_ctr():
     def __init__(self):

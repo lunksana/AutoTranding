@@ -24,15 +24,19 @@ class Autotranding():
                 "addr": addr,
                 "port": port
             },    
-            "collections": {
-                "bn_api": bn_api,
-                "order_list": "",
-                "kline_list": "",
-                "sys_conf": sys_conf
-            },
+            "collections": [
+                "bn_api",
+                "order_list",
+                "kline_list",
+                "sys_conf",
+            ],
             "configured": True
         }
-        return control.Json_ctr().json_write(insert_conf)
+        control.Json_ctr().json_write(insert_conf)
+        newdb = db.Newdb(insert_conf['mongodb'],insert_conf['db']).init_db()
+        return db.Controldb(newdb,'bn_api').insert_one({
+            'user_api': user_input['bn_api']['user_api'], 'user_secret': user_input['bn_api']['user_secret']
+        })
     
     def normalstart():
         pass

@@ -19,5 +19,6 @@ bn = ccxt.binance({
     "secret": user_secret
 })
 
-get_info = control.Json_ctr.json_file()
-user_api = get_info[]
+# get_info = control.Json_ctr.json_file()
+# user_api = get_info[]
+

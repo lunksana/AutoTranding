@@ -22,3 +22,17 @@ bn = ccxt.binance({
 # get_info = control.Json_ctr.json_file()
 # user_api = get_info[]
 
+class Orderprocessing():
+    def def __init__(self, symbol):
+      self.symbol = symbol
+      
+    def new_order(self, order):
+        neworder = {
+        'symbol': 'BTCUSDT',
+        'side': 'BUY',
+        'type': "TAKE_PROFIT",
+        'quantity': 0.03,
+        'price': 58200,
+        'stopPrice': 58200,
+        'positionSide': 'SHORT'
+    }

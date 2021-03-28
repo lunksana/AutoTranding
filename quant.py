@@ -3,6 +3,7 @@ import time
 import db
 import control
 
+# 开始量化
 class Startquant():
     def __init__(self):
         bn = ccxt.binance({
@@ -22,6 +23,7 @@ bn = ccxt.binance({
 # get_info = control.Json_ctr.json_file()
 # user_api = get_info[]
 
+# 订单处理
 class Orderprocessing():
     def def __init__(self, symbol):
       self.symbol = symbol
@@ -36,3 +38,11 @@ class Orderprocessing():
         'stopPrice': 58200,
         'positionSide': 'SHORT'
     }
+
+# 创建行情分析
+class Marketjudgment():
+    def __init__(self, exchange):
+        self.exchange = exchange
+
+    def klines(self, interval):
+        kline = self.exchange

@@ -1,3 +1,5 @@
+# take_profit_market 止盈
+
 import ccxt
 import time
 import db
@@ -45,4 +47,6 @@ class Marketjudgment():
         self.exchange = exchange
 
     def klines(self, interval):
-        kline = self.exchange
+        kline = self.exchange.fetchOHLCV('BTC/USDT',interval)
+        print(kline)
+        

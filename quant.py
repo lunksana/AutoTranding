@@ -45,4 +45,4 @@ class Marketjudgment():
         self.exchange = exchange
 
     def klines(self, interval):
-        kline = self.exchange
+        kline = self.exchange.

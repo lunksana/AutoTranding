@@ -162,7 +162,22 @@ STOP, TAKE_PROFIT	            quantity, price, stopPrice
 STOP_MARKET, TAKE_PROFIT_MARKET	stopPrice
 TRAILING_STOP_MARKET	        callbackRate
 '''
-   
+# 建立止损单
+'''
+bn.fapiPrivate_post_order({
+    'symbol': 'BTCUSDT', #必要参数
+    'side': 'SELL,BUY',  #必要参数
+    'positionSide': 'LONG,SHORT', #以此判断此为空单还是多单
+    'type': 'LIMIT,MARKET,STOP,TAKE_PROFIT,STOP_MARKET,TAKE_PROFIT_MARKET,TRAILING_STOP_MARKET', #必要参数
+    'reduceOnly': 'True,false', #不能和closePosition一同使用
+    'quantity': 0, #下单的数量，如果有closePosition则此参数无意义
+    'price': 0, #价格，一般止损止盈都是以stopPrice为出发条件
+    'newClientOrderId': '^[\.A-Z\:/a-z0-9_-]{1,36}$', #自定义订单ID
+    'stopPrice': 0, #出发价格，STOP,STOP_MARKET,TAKE_PROFIT,TAKE_PROFIT_MARKET这几个类型是采用
+    'closePosition': 'True,false', #不与reduceOnly及quantity一起使用，仅支持STOP_MARKET,TAKE_PROFIT_MARKET
+    'workingType': 'MARK_PRICE,CONTRACT_PRICE' #stopPrice触发类型，默认为最新价格，也可更改为标记价格
+})   
+'''
 
 
 # 判断挂单是否成交

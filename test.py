@@ -168,8 +168,24 @@ def create_tpsl_order(type, ratio, price, positions_info):
             stoppriceIsNeeded = True
     if ratio == None:
         closepositionIsNeed = True
+        quantityIsNeeded = False
     # 必要参数
     # amount,side,positionSide
+    if len(positions_info) > 1:
+        for i in positions_info:
+            if i['positionSide'] == 'LONG':
+                positionsSide = 'LONG'
+                side = 'SELL'
+            else:
+                positionsSide = 'SHORT'
+                side = 'BUY'
+    else:
+        if positions_info['positionSide'] == 'LONG':
+            side = 'SELL'
+        else:
+            side = 'BUY'
+        positionsSide = positions_info['positionSide']
+        
     
         
                         

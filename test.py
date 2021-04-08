@@ -12,9 +12,14 @@ symbol = 'BTC/USDT'
 dbclient = pymongo.MongoClient(userapi.dbaddr,userapi.dbport)
 db = dbclient['bn']
 price_db = dbclient['price']
+# 挂单
 order_col = db['orders']
+# 已成交订单
 trade_col = db['trades']
+# 资金情况
 funds_col = db['funds']
+# 持仓情况
+positions_col = db['positions']
 
 bn = ccxt.binance({
     'enableRateLimit': True,
@@ -250,11 +255,21 @@ def ma(long,time):
 '''
 def fetch_positions(symbol):
     bn_symbol = symbol.replace('/','')
-    positisons_list = []
+    positions_list = []
     for i in bn.fapiPrivateV2GetPositionRisk():
         if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
-            positisons_list.append(i)
-    return positisons_list
+            positions_list.append(i)
+            position_info = {
+                'symbol': symbol,
+                'positionSide': i['positionSide'],
+                'price': float(i['entryPrice']),
+                'margin': float(i['isolatedWallet']),
+                'amount': float(i['positionAmt']),
+                'liquidationPrice': float(i['liquidationPrice']),
+                'leverage': int(i['leverage'])
+            }
+            positions_col.insert_one(position_info)
+    return positions_list
 
 # 价格监测
 def price_monitor(time):

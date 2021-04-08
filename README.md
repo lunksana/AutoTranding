@@ -32,10 +32,24 @@
 > 函数会自动将输入的内容写入mongodb数据库方便后续的调用（数据库的地址信息保存在config目录下的cfg.json文件中，软件会通过检测此文件判断是否已经进行了数据库初始化配置）；
 > 自动化进行行情分析，当符合设定的要求之后进行订单操作；
 
-# 订单参数
+# 止盈止损订单参数
 
 ---
-|参数|止盈|止损|
-|<----->|<----->|<------>|
-|symbol|||
-|side|SELL|BUY|
+|参数|是否必须|STOP|TAKE_PROFIT|STOP_MARKET|TAKE_PROFIT_MARKET|TRAILING_STOP_MARKET|
+|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
+|symbol|YES|BTCUSDT|BTCUSDT|BTCUSDT|BTCUSDT|BTCUSDT|
+|side|YES|BUY/SELL|BUY/SELL|BUY/SELL|BUY/SELL|BUY/SELL|
+|positionSide|YES|LONG/SHORT|LONG/SHORT|LONG/SHORT|LONG/SHORT|LONG/SHORT|
+|reduceOnly|NO|true/false|true/false|||true/false|
+|quantity|NO|||||0|
+|price|NO||||||
+|newClientOrderId|NO||||||
+|stopPrice|NO|0|0|0|0||
+|closePosition|NO|||true/false|true/false||
+|activationPrice|NO|||||0|
+|callbackRate|NO|||||[0.1,5]|
+|timeInForce|NO||||||
+|workingType|NO|MARK_PRICE/CONTRACT_PRICE|MARK_PRICE/CONTRACT_PRICE|MARK_PRICE/CONTRACT_PRICE|MARK_PRICE/CONTRACT_PRICE|MARK_PRICE/CONTRACT_PRICE|
+|priceProtect|NO|TRUE/FALSE|TRUE/FALSE|TRUE/FALSE|TRUE/FALSE||
+|newOrderRespType|NO||||||
+|recvWindow|NO||||||

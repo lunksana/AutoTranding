@@ -2,3 +2,4 @@ ccxt
 pymongo
 pandas
 requests
+six

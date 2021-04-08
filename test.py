@@ -9,7 +9,7 @@ from cyberbrain import trace
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-dbclient = pymongo.MongoClient("mongodb://192.168.0.5:27017/")
+dbclient = pymongo.MongoClient(userapi.dbaddr,userapi.dbport)
 db = dbclient['bn']
 price_db = dbclient['price']
 order_col = db['orders']
@@ -129,31 +129,6 @@ def make_order(btc_price, amount):
     return order_id
 
 # 建立止损止盈单
-def create_tpsl_order(type,amount,price,ratio):
-    upperType = type.upper()
-    typeList = ['LIMIT', 'MARKET', 'STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET', 'TRAILING_STOP_MARKET']
-    if upperType not in typeList:
-        print('订单模式错误！请重新输入！！')
-        exit()
-    else:
-        if upperType == 'LIMIT':
-            timeinforceIsNeeded = True
-            quantityIsNeeded = True
-            priceIsNeeded = True
-        elif upperType == 'MARKET':
-            quantityIsNeeded = True
-        elif upperType == 'STOP' or upperType == 'TAKE_PROFIT':
-            quantityIsNeeded = True
-            priceIsNeeded = True
-            stoppriceIsNeeded = True
-        elif upperType == 'STOP_MARKET' or upperType == 'TAKE_PROFIT_MARKET':
-            stoppriceIsNeeded = True
-        elif upperType == 'TRAILING_STOP_MARKET':
-            callbackrateIsNeeded = True
-    if ratio == None:
-        closepositionIsNeed = True
-        
-                            
 '''
 Type	                        强制要求的参数
 LIMIT	                        timeInForce, quantity, price
@@ -178,6 +153,26 @@ bn.fapiPrivate_post_order({
     'workingType': 'MARK_PRICE,CONTRACT_PRICE' #stopPrice触发类型，默认为最新价格，也可更改为标记价格
 })   
 '''
+def create_tpsl_order(type, ratio, price, positions_info):
+    upperType = type.upper()
+    typeList = ['STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
+    if upperType not in typeList:
+        print('订单模式错误！请重新输入！！')
+        exit()
+    else:
+        if upperType == 'STOP' or upperType == 'TAKE_PROFIT':
+            quantityIsNeeded = True
+            priceIsNeeded = True
+            stoppriceIsNeeded = True
+        elif upperType == 'STOP_MARKET' or upperType == 'TAKE_PROFIT_MARKET':
+            stoppriceIsNeeded = True
+    if ratio == None:
+        closepositionIsNeed = True
+    # 必要参数
+    # amount,side,positionSide
+    
+        
+                        
 
 
 # 判断挂单是否成交
@@ -219,7 +214,31 @@ def ma(long,time):
     for i in range(0-long,0):
         ohlcvsum += ohlcv[i][4]
     return ohlcvsum/long
-    
+
+# 获取当前持仓
+'''
+获取的持仓信息
+{'entryPrice': '56791.66666',
+ 'isolatedMargin': '31.97800937',
+ 'isolatedWallet': '27.75053162',
+ 'leverage': '20',
+ 'liquidationPrice': '54233.54768876',
+ 'marginType': 'isolated',
+ 'markPrice': '57214.41443521',
+ 'maxNotionalValue': '10000000',
+ 'notional': '572.14414435',
+ 'positionAmt': '0.010',
+ 'positionSide': 'LONG',
+ 'symbol': 'BTCUSDT',
+ 'unRealizedProfit': '4.22747775'}
+'''
+def fetch_positions(symbol):
+    bn_symbol = symbol.replace('/','')
+    positisons_list = []
+    for i in bn.fapiPrivateV2GetPositionRisk():
+        if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
+            positisons_list.append(i)
+    return positisons_list
 
 # 价格监测
 def price_monitor(time):
@@ -248,5 +267,21 @@ def price_monitor(time):
 #pprint(bn.fetch_withdrawals())
 
 #bn.create_limit_sell_order(symbol, 0, 0, {'stopPrice': 57000, 'type': 'stopmarket'})
-#bn.create_order(symbol, 'TAKE_PROFIT', 'SELL', 0.006, {
-#    'stopPrice': 58300, 'positionSide': 'LONG'})
+# bn.create_order(symbol, 'TAKE_PROFIT_MARKET', 'SELL', 0, 0, {
+#     'stopPrice': 57960, 'positionSide': 'LONG', 'closePosition': True})
+
+# bn.fapiPrivate_post_order({
+#     'symbol': 'BTCUSDT',
+#     'positionSide': 'LONG',
+#     'side': 'SELL',
+#     'type': 'TAKE_PROFIT',
+#     'quantity': 0.002,
+#     'stopPrice': 56900,
+#     'workingType': 'MARK_PRICE',
+#     'price':
+# })
+
+# pprint(bn.fapiPrivateV2_get_account()['totalMaintMargin'])
+# for i in bn.fapiPrivateV2GetPositionRisk():
+#     if i['symbol'] == 'BTCUSDT' and float(i['entryPrice']) > 0:
+#         pprint(i)

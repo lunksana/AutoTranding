@@ -18,8 +18,6 @@ order_col = db['orders']
 trade_col = db['trades']
 # 资金情况
 funds_col = db['funds']
-# 持仓情况
-positions_col = db['positions']
 
 bn = ccxt.binance({
     'enableRateLimit': True,
@@ -107,7 +105,7 @@ print(same_id)
 def id_check(id):
     open_order_id = []
     for order in bn.fetch_open_orders(symbol):
-        open_order_id.append(order['id'])
+        open_order_id.append(order[id])
     if id in open_order_id:
         return True
     else:
@@ -133,63 +131,6 @@ def make_order(btc_price, amount):
     order_id = order_info['order_id']
     return order_id
 
-# 建立止损止盈单
-'''
-Type	                        强制要求的参数
-LIMIT	                        timeInForce, quantity, price
-MARKET	                        quantity
-STOP, TAKE_PROFIT	            quantity, price, stopPrice
-STOP_MARKET, TAKE_PROFIT_MARKET	stopPrice
-TRAILING_STOP_MARKET	        callbackRate
-'''
-# 建立止损单
-'''
-bn.fapiPrivate_post_order({
-    'symbol': 'BTCUSDT', #必要参数
-    'side': 'SELL,BUY',  #必要参数
-    'positionSide': 'LONG,SHORT', #以此判断此为空单还是多单
-    'type': 'LIMIT,MARKET,STOP,TAKE_PROFIT,STOP_MARKET,TAKE_PROFIT_MARKET,TRAILING_STOP_MARKET', #必要参数
-    'reduceOnly': 'True,false', #不能和closePosition一同使用
-    'quantity': 0, #下单的数量，如果有closePosition则此参数无意义
-    'price': 0, #价格，一般止损止盈都是以stopPrice为出发条件
-    'newClientOrderId': '^[\.A-Z\:/a-z0-9_-]{1,36}$', #自定义订单ID
-    'stopPrice': 0, #出发价格，STOP,STOP_MARKET,TAKE_PROFIT,TAKE_PROFIT_MARKET这几个类型是采用
-    'closePosition': 'True,false', #不与reduceOnly及quantity一起使用，仅支持STOP_MARKET,TAKE_PROFIT_MARKET
-    'workingType': 'MARK_PRICE,CONTRACT_PRICE' #stopPrice触发类型，默认为最新价格，也可更改为标记价格
-})   
-'''
-def create_tpsl_order(type, ratio, price, positions_info):
-    upperType = type.upper()
-    typeList = ['STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
-    if upperType not in typeList:
-        print('订单模式错误！请重新输入！！')
-        exit()
-    else:
-        if upperType == 'STOP' or upperType == 'TAKE_PROFIT':
-            quantityIsNeeded = True
-            priceIsNeeded = True
-            stoppriceIsNeeded = True
-        elif upperType == 'STOP_MARKET' or upperType == 'TAKE_PROFIT_MARKET':
-            stoppriceIsNeeded = True
-    if ratio == None:
-        closepositionIsNeed = True
-        quantityIsNeeded = False
-    # 必要参数
-    # amount,side,positionSide
-    if len(positions_info) > 1:
-        for i in positions_info:
-            if i['positionSide'] == 'LONG':
-                positionsSide = 'LONG'
-                side = 'SELL'
-            else:
-                positionsSide = 'SHORT'
-                side = 'BUY'
-    else:
-        if positions_info['positionSide'] == 'LONG':
-            side = 'SELL'
-        else:
-            side = 'BUY'
-        positionsSide = positions_info['positionSide']
         
     
         
@@ -257,19 +198,25 @@ def fetch_positions(symbol):
     bn_symbol = symbol.replace('/','')
     positions_list = []
     for i in bn.fapiPrivateV2GetPositionRisk():
-        if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
-            positions_list.append(i)
-            position_info = {
-                'symbol': symbol,
-                'positionSide': i['positionSide'],
-                'price': float(i['entryPrice']),
-                'margin': float(i['isolatedWallet']),
-                'amount': float(i['positionAmt']),
-                'liquidationPrice': float(i['liquidationPrice']),
-                'leverage': int(i['leverage'])
-            }
-            positions_col.insert_one(position_info)
+        if i != None:
+            if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
+                positions_list.append(i)
+        else:
+            print("此时没有持仓！")
+            return
     return positions_list
+
+# 建立持仓字典，方便查询
+def positions_info(position_list):
+    if len(position_list) > 1:
+        if position_list[0]['positionSide'] == 'LONG':
+            positions_info = dict(zip(['LONG','SHORT'],[position_list[0],position_list[1]]))
+        else:
+            positions_info = dict(zip(['SHORT','LONG'],[position_list[0],position_list[1]]))
+    else:
+        positions_info = dict([(position_list[0]['positionSide'],position_list[0])])
+    return positions_info 
+         
 
 # 价格监测
 def price_monitor(time):
@@ -283,6 +230,48 @@ def price_monitor(time):
         }
         price_mouth_col.insert_one(price_now)
         time.sleep(3)
+
+# 建立止损止盈单
+'''
+Type	                        强制要求的参数
+LIMIT	                        timeInForce, quantity, price
+MARKET	                        quantity
+STOP, TAKE_PROFIT	            quantity, price, stopPrice
+STOP_MARKET, TAKE_PROFIT_MARKET	stopPrice
+TRAILING_STOP_MARKET	        callbackRate
+'''
+# 建立止损单
+'''
+bn.fapiPrivate_post_order({
+    'symbol': 'BTCUSDT', #必要参数
+    'side': 'SELL,BUY',  #必要参数
+    'positionSide': 'LONG,SHORT', #以此判断此为空单还是多单
+    'type': 'LIMIT,MARKET,STOP,TAKE_PROFIT,STOP_MARKET,TAKE_PROFIT_MARKET,TRAILING_STOP_MARKET', #必要参数
+    'reduceOnly': 'True,false', #不能和closePosition一同使用
+    'quantity': 0, #下单的数量，如果有closePosition则此参数无意义
+    'price': 0, #价格，一般止损止盈都是以stopPrice为出发条件
+    'newClientOrderId': '^[\.A-Z\:/a-z0-9_-]{1,36}$', #自定义订单ID
+    'stopPrice': 0, #出发价格，STOP,STOP_MARKET,TAKE_PROFIT,TAKE_PROFIT_MARKET这几个类型是采用
+    'closePosition': 'True,false', #不与reduceOnly及quantity一起使用，仅支持STOP_MARKET,TAKE_PROFIT_MARKET
+    'workingType': 'MARK_PRICE,CONTRACT_PRICE' #stopPrice触发类型，默认为最新价格，也可更改为标记价格
+})   
+'''
+def create_tpsl_order(type, ratio, price, positions_info):
+    upperType = type.upper()
+    typeList = ['STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
+    if upperType not in typeList:
+        print('订单模式错误！请重新输入！！')
+        return
+    else:
+        if upperType == 'STOP' or upperType == 'TAKE_PROFIT':
+            quantityIsNeeded = True
+            priceIsNeeded = True
+            stoppriceIsNeeded = True
+        elif upperType == 'STOP_MARKET' or upperType == 'TAKE_PROFIT_MARKET':
+            stoppriceIsNeeded = True
+            closepositionIsNeeded = True
+    # 必要参数
+    # amount,side,positionSide
 
     
 
@@ -316,3 +305,5 @@ def price_monitor(time):
 # for i in bn.fapiPrivateV2GetPositionRisk():
 #     if i['symbol'] == 'BTCUSDT' and float(i['entryPrice']) > 0:
 #         pprint(i)
+
+print(positions_info(fetch_positions(symbol)))

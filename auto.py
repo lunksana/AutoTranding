@@ -256,7 +256,7 @@ bn.fapiPrivate_post_order({
     'workingType': 'MARK_PRICE,CONTRACT_PRICE' #stopPrice触发类型，默认为最新价格，也可更改为标记价格
 })   
 '''
-def create_tpsl_order(type, ratio, price, positions_info):
+def create_tpsl_order(type, ratio, price, poside):
     upperType = type.upper()
     typeList = ['STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
     if upperType not in typeList:
@@ -267,11 +267,40 @@ def create_tpsl_order(type, ratio, price, positions_info):
             quantityIsNeeded = True
             priceIsNeeded = True
             stoppriceIsNeeded = True
+            positionsideIsNeeded = True
         elif upperType == 'STOP_MARKET' or upperType == 'TAKE_PROFIT_MARKET':
             stoppriceIsNeeded = True
             closepositionIsNeeded = True
+            positionsideIsNeeded = True
     # 必要参数
     # amount,side,positionSide
+    if positionsideIsNeeded:
+        if poside not in ['LONG','SHORT']:
+            print('持仓参数错误，请重新尝试！')
+            return
+        else:
+            positionSide = poside
+            position = positions_info(fetch_positions(symbol))[poside]
+            if poside == 'LONG':
+                side = 'SELL'
+            else:
+                side = 'BUY'
+    if quantityIsNeeded:
+        if ratio == None:
+            print('订单数量错误！')
+            return
+        elif ratio > 1 or ratio < 0:
+            print('订单数量超过范围！')
+            return
+        else:
+            quantity = float(position['positionAmt']) * ratio
+    if priceIsNeeded or stoppriceIsNeeded:
+        stopPrice = price
+    if closepositionIsNeeded:
+        closePosition = True
+    the_order = bn.create_order(symbol,type,side)
+
+        
 
     
 

@@ -272,6 +272,7 @@ def create_tpsl_order(type, ratio, price, poside):
             stoppriceIsNeeded = True
             closepositionIsNeeded = True
             positionsideIsNeeded = True
+            quantity = 0
     # 必要参数
     # amount,side,positionSide
     if positionsideIsNeeded:
@@ -298,7 +299,14 @@ def create_tpsl_order(type, ratio, price, poside):
         stopPrice = price
     if closepositionIsNeeded:
         closePosition = True
-    the_order = bn.create_order(symbol,type,side)
+    else:
+        closePosition = False
+    the_order = bn.create_order(symbol,type,side,quantity,price,{
+        'stopPrice': stopPrice,
+        'positionSide': positionSide,
+        'closePosition': closePosition
+    })
+    return the_order
 
         
 

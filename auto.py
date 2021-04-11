@@ -454,12 +454,13 @@ def cancel_my_order(id = None,type = None, side = None):
     if len(order_list) == 0:
         print('无有效挂单！')
         return
-    else：
-        if id == None:
+    else:
+        if id == None or id == 'all':
             bn.cancel_all_orders(symbol)
             print('已取消所有订单！')
         elif type(id) == 'str' and type(int(id)) == 'int':
             bn.cancel_order(id)
+            print('挂单'+id+'已经取消！')
         elif type not in typeList:
             bn.fetch_open_orders(symbol)
 

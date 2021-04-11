@@ -70,19 +70,20 @@ pprint(bn.fetch_ticker('BTC/USDT')['last'])
 print(int(avg_ch('1h') * 0.618))
 
 #pprint(bn.fetch_closed_orders(symbol))
-closed_order_ids = []
-for i in bn.fetch_closed_orders(symbol):
-    closed_order_ids.append(i['id'])
+# 判断已成交挂单和成交订单之间的关系
+# closed_order_ids = []
+# for i in bn.fetch_closed_orders(symbol):
+#     closed_order_ids.append(i['id'])
 
-trade_ids = []
-for i in bn.fetch_my_trades(symbol):
-    trade_ids.append(i['order'])
-print(len(closed_order_ids),len(trade_ids))
-same_id = 0
-for i in closed_order_ids:
-    if i in trade_ids:
-        same_id += 1
-print(same_id)
+# trade_ids = []
+# for i in bn.fetch_my_trades(symbol):
+#     trade_ids.append(i['order'])
+# print(len(closed_order_ids),len(trade_ids))
+# same_id = 0
+# for i in closed_order_ids:
+#     if i in trade_ids:
+#         same_id += 1
+# print(same_id)
         
 #pprint(bn.create_order('BTC/USDT', 'limit', 'sell', 0.001, 62000, {'positionSide': 'SHORT'}))
 
@@ -112,6 +113,152 @@ def id_check(id):
     else:
         return False
 
+# 开单信息写入数据库
+'''
+普通订单
+{'amount': 0.001,
+ 'average': None,
+ 'clientOrderId': 'x-xcKtGhcuf1a9378f36cb2aec509b64',
+ 'cost': 0.0,
+ 'datetime': None,
+ 'fee': None,
+ 'filled': 0.0,
+ 'id': '17682474698',
+ 'info': {'avgPrice': '0.00000',
+          'clientOrderId': 'x-xcKtGhcuf1a9378f36cb2aec509b64',
+          'closePosition': False,
+          'cumQty': '0',
+          'cumQuote': '0',
+          'executedQty': '0',
+          'orderId': 17682474698,
+          'origQty': '0.001',
+          'origType': 'LIMIT',
+          'positionSide': 'LONG',
+          'price': '58000',
+          'priceProtect': False,
+          'reduceOnly': False,
+          'side': 'BUY',
+          'status': 'NEW',
+          'stopPrice': '0',
+          'symbol': 'BTCUSDT',
+          'timeInForce': 'GTC',
+          'type': 'LIMIT',
+          'updateTime': 1618115969768,
+          'workingType': 'CONTRACT_PRICE'},
+ 'lastTradeTimestamp': None,
+ 'postOnly': False,
+ 'price': 58000.0,
+ 'remaining': 0.001,
+ 'side': 'buy',
+ 'status': 'open',
+ 'stopPrice': 0.0,
+ 'symbol': 'BTC/USDT',
+ 'timeInForce': 'GTC',
+ 'timestamp': None,
+ 'trades': None,
+ 'type': 'limit'}
+ 
+ {'amount': 0.0,
+ 'average': None,
+ 'clientOrderId': 'x-xcKtGhcu42cfdc23e6cec93994c6bc',
+ 'cost': 0.0,
+ 'datetime': None,
+ 'fee': None,
+ 'filled': 0.0,
+ 'id': '17682940118',
+ 'info': {'avgPrice': '0.00000',
+          'clientOrderId': 'x-xcKtGhcu42cfdc23e6cec93994c6bc',
+          'closePosition': True,
+          'cumQty': '0',
+          'cumQuote': '0',
+          'executedQty': '0',
+          'orderId': 17682940118,
+          'origQty': '0',
+          'origType': 'TAKE_PROFIT_MARKET',
+          'positionSide': 'LONG',
+          'price': '0',
+          'priceProtect': False,
+          'reduceOnly': True,
+          'side': 'SELL',
+          'status': 'NEW',
+          'stopPrice': '61000',
+          'symbol': 'BTCUSDT',
+          'timeInForce': 'GTC',
+          'type': 'TAKE_PROFIT_MARKET',
+          'updateTime': 1618116649437,
+          'workingType': 'CONTRACT_PRICE'},
+ 'lastTradeTimestamp': None,
+ 'postOnly': False,
+ 'price': 0.0,
+ 'remaining': 0.0,
+ 'side': 'sell',
+ 'status': 'open',
+ 'stopPrice': 61000.0,
+ 'symbol': 'BTC/USDT',
+ 'timeInForce': 'GTC',
+ 'timestamp': None,
+ 'trades': None,
+ 'type': 'take_profit_market'}
+ 
+ trade
+ {'amount': 0.004,
+  'cost': 241.8,
+  'datetime': '2021-04-11T02:47:42.087Z',
+  'fee': {'cost': 0.04836, 'currency': 'USDT'},
+  'id': '680489898',
+  'info': {'buyer': True,
+           'commission': '0.04836000',
+           'commissionAsset': 'USDT',
+           'id': 680489898,
+           'maker': True,
+           'marginAsset': 'USDT',
+           'orderId': 17679419275,
+           'positionSide': 'LONG',
+           'price': '60450',
+           'qty': '0.004',
+           'quoteQty': '241.80000',
+           'realizedPnl': '0',
+           'side': 'BUY',
+           'symbol': 'BTCUSDT',
+           'time': 1618109262087},
+  'order': '17679419275',
+  'price': 60450.0,
+  'side': 'buy',
+  'symbol': 'BTC/USDT',
+  'takerOrMaker': 'maker',
+  'timestamp': 1618109262087,
+  'type': None}
+'''
+def db_insert(data_info):
+    val = 'clientOrderId'
+    if val in data_info.keys():
+        col = order_col
+        col_dict = {
+            'order_id': data_info['id'],
+            'order_status': data_info['status'],
+            'order_price': data_info['price'],
+            'order_amount': data_info['amount'],
+            'order_side': data_info['side'],
+            'order_positionSide': data_info['info']['positionSide'],
+            'order_uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['info']['updateTime']/1000))
+        }
+    else:
+        col = trade_col
+        col_dict = {
+            'trade_id': data_info['order'],
+            'trade_price': data_info['price'],
+            'trade_amount': data_info['amount'],
+            'trade_cost': data_info['fee']['cost'],
+            'trade_P&L': float(data_info['info']['realizedPn1']),
+            'trade_side': data_info['info']['side'],
+            'trade_positionSide': data_info['info']['positionSide'],
+            'trade_time': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['timestamp']/1000))
+        }
+    col.insert_one(col_dict)
+    return
+
+    
+
 # 开单
 def make_order(btc_price, amount):
     if amount > 0:
@@ -119,17 +266,8 @@ def make_order(btc_price, amount):
     else:
         amount = abs(amount)
         new_order = bn.create_limit_sell_order(symbol, amount, btc_price, {'positionSide': 'SHORT'})
-    order_info = {
-        'order_id': new_order['id'],
-        'order_status': new_order['status'],
-        'order_price': new_order['price'],
-        'order_amount': new_order['amount'],
-        'order_side': new_order['side'],
-        'order_positionSide': new_order['info']['positionSide'],
-        'order_uptime': time.strftime('%Y-%m-%d %H:%M%S', time.localtime(new_order['info']['updatetime']))
-    }
-    order_col.insert_one(order_info)
-    order_id = order_info['order_id']
+    db_insert(new_order)
+    order_id = new_order['id']
     return order_id
 
         
@@ -152,17 +290,7 @@ def order_check(order_id):
         for trade in bn.fetch_my_trades(symbol):
             if trade['order'] == order_id:
                 print("挂单已成交！")
-                trade_info = {
-                    'trade_id': trade['order'],
-                    'trade_price': trade['price'],
-                    'trade_amount': trade['amount'],
-                    'trade_cost': trade['fee']['cost'],
-                    'trade_P&L': float(trade['info']['realizedPn1']),
-                    'trade_side': trade['info']['side'],
-                    'trade_positionSide': trade['info']['positionSide'],
-                    'trade_time': trade['datetime']                
-                }
-                trade_col.insert_one(trade_info)
+                db_insert(trade)
                 order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': 'closed'}})
     else:
         order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': 'canceled'}})
@@ -259,6 +387,11 @@ bn.fapiPrivate_post_order({
 '''
 def create_tpsl_order(type, ratio, price, poside):
     upperType = type.upper()
+    quantityIsNeeded =False
+    priceIsNeeded = False
+    stoppriceIsNeeded = False
+    positionsideIsNeeded = False
+    closepositionIsNeeded = False
     typeList = ['STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
     if upperType not in typeList:
         print('订单模式错误！请重新输入！！')
@@ -273,7 +406,7 @@ def create_tpsl_order(type, ratio, price, poside):
             stoppriceIsNeeded = True
             closepositionIsNeeded = True
             positionsideIsNeeded = True
-            quantity = 0
+            quantity = None
     # 必要参数
     # amount,side,positionSide
     if positionsideIsNeeded:
@@ -295,7 +428,11 @@ def create_tpsl_order(type, ratio, price, poside):
             print('订单数量超过范围！')
             return
         else:
-            quantity = float(position['positionAmt']) * ratio
+            quantity = round((float(position['positionAmt']) * ratio),3)
+            # 保留三位小数
+            if quantity == 0:
+                print('数值太小！')
+                return
     if priceIsNeeded or stoppriceIsNeeded:
         stopPrice = price
     if closepositionIsNeeded:
@@ -307,7 +444,24 @@ def create_tpsl_order(type, ratio, price, poside):
         'positionSide': positionSide,
         'closePosition': closePosition
     })
-    return the_order
+    db_insert(the_order)
+    return the_order['id']
+
+# 取消订单，基于输入的内容和类型进行订单的取消
+def cancel_my_order(id = None,type = None, side = None):
+    order_list = bn.fetch_open_orders(symbol)
+    typeList = ['LIMIT','MARKET','STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
+    if len(order_list) == 0:
+        print('无有效挂单！')
+        return
+    else：
+        if id == None:
+            bn.cancel_all_orders(symbol)
+            print('已取消所有订单！')
+        elif type(id) == 'str' and type(int(id)) == 'int':
+            bn.cancel_order(id)
+        elif type not in typeList:
+            bn.fetch_open_orders(symbol)
 
         
 
@@ -344,4 +498,7 @@ def create_tpsl_order(type, ratio, price, poside):
 #     if i['symbol'] == 'BTCUSDT' and float(i['entryPrice']) > 0:
 #         pprint(i)
 
-print(positions_info(fetch_positions(symbol)))
+#print(positions_info(fetch_positions(symbol)))
+#pprint(bn.fetch_my_trades(symbol,limit=1))
+#pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
+pprint(bn.fetch_open_orders(symbol))

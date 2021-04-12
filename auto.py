@@ -369,22 +369,6 @@ STOP, TAKE_PROFIT	            quantity, price, stopPrice
 STOP_MARKET, TAKE_PROFIT_MARKET	stopPrice
 TRAILING_STOP_MARKET	        callbackRate
 '''
-# 建立止损单
-'''
-bn.fapiPrivate_post_order({
-    'symbol': 'BTCUSDT', #必要参数
-    'side': 'SELL,BUY',  #必要参数
-    'positionSide': 'LONG,SHORT', #以此判断此为空单还是多单
-    'type': 'LIMIT,MARKET,STOP,TAKE_PROFIT,STOP_MARKET,TAKE_PROFIT_MARKET,TRAILING_STOP_MARKET', #必要参数
-    'reduceOnly': 'True,false', #不能和closePosition一同使用
-    'quantity': 0, #下单的数量，如果有closePosition则此参数无意义
-    'price': 0, #价格，一般止损止盈都是以stopPrice为出发条件
-    'newClientOrderId': '^[\.A-Z\:/a-z0-9_-]{1,36}$', #自定义订单ID
-    'stopPrice': 0, #出发价格，STOP,STOP_MARKET,TAKE_PROFIT,TAKE_PROFIT_MARKET这几个类型是采用
-    'closePosition': 'True,false', #不与reduceOnly及quantity一起使用，仅支持STOP_MARKET,TAKE_PROFIT_MARKET
-    'workingType': 'MARK_PRICE,CONTRACT_PRICE' #stopPrice触发类型，默认为最新价格，也可更改为标记价格
-})   
-'''
 def create_tpsl_order(type, ratio, price, poside):
     upperType = type.upper()
     quantityIsNeeded =False
@@ -448,21 +432,32 @@ def create_tpsl_order(type, ratio, price, poside):
     return the_order['id']
 
 # 取消订单，基于输入的内容和类型进行订单的取消
-def cancel_my_order(id = None,type = None, side = None):
+# 取消订单类型 全部，限价，止盈，止损，或者直接基于订单id来进行，也可以直接基于做空做多来进行操作
+def cancel_my_order(order_info):
     order_list = bn.fetch_open_orders(symbol)
-    typeList = ['LIMIT','MARKET','STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
+    input_info = order_info.upper()
+    typeList = ['LIMIT','STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET','ALL','LONG','SHORT']
     if len(order_list) == 0:
         print('无有效挂单！')
         return
     else:
-        if id == None or id == 'all':
-            bn.cancel_all_orders(symbol)
-            print('已取消所有订单！')
-        elif type(id) == 'str' and type(int(id)) == 'int':
-            bn.cancel_order(id)
-            print('挂单'+id+'已经取消！')
-        elif type not in typeList:
-            bn.fetch_open_orders(symbol)
+        if input_info.isdigit():
+            order_id = []
+            for i in order_list:
+                order_id.append(i['order'])
+            if input_info not in order_id:
+                print('请输入有效的挂单id！')
+                return
+            else:
+                bn.cancel_order(order_info)
+        elif input_info not in typeList:
+            print('输入的参数错误！')
+            return
+        else:
+            for i in order_list:
+                if i['info']['type'] == input_info or i['info']['positionSide'] == input_info:
+                    bn.cancel_order(i['order'])
+    return
 
         
 
@@ -502,4 +497,4 @@ def cancel_my_order(id = None,type = None, side = None):
 #print(positions_info(fetch_positions(symbol)))
 #pprint(bn.fetch_my_trades(symbol,limit=1))
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
-pprint(bn.fetch_open_orders(symbol))
+#pprint(bn.fetch_open_orders(symbol))

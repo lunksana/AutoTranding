@@ -1,3 +1,8 @@
+# 注意点：
+# 1.常见的挂单状态有open，closed，expired，canceled，在订单取消或者创建过程中都需要考虑这些状态
+# 2.成交额与手续费直接的关系
+
+
 import ccxt
 import time
 import pymongo
@@ -242,6 +247,13 @@ def db_insert(data_info):
             'order_positionSide': data_info['info']['positionSide'],
             'order_uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['info']['updateTime']/1000))
         }
+    elif: type(data_info) == 'float':
+        month = time.strftime('%m',time.localtime(time.time()))
+        col = price_db[month]
+        col_dict = {
+            'btc_price': btc_price,
+            'updatetime': time.strftime('%d-%H:%M:%S',time.localtime(time.time()))
+        }
     else:
         col = trade_col
         col_dict = {
@@ -330,9 +342,6 @@ def fetch_positions(symbol):
         if i != None:
             if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
                 positions_list.append(i)
-        else:
-            print("此时没有持仓！")
-            return
     return positions_list
 
 # 建立持仓字典，方便查询
@@ -351,13 +360,7 @@ def positions_info(position_list):
 def price_monitor(time):
     while True:
         btc_price = bn.fetch_ticker(symbol)['last']
-        month = time.strftime('%m',time.localtime(time.time()))
-        price_mouth_col = price_db[month]
-        price_now = {
-            'btc_price': btc_price,
-            'updatetime': time.strftime('%d-%H:%M:%S',time.localtime(time.time()))
-        }
-        price_mouth_col.insert_one(price_now)
+        db_insert(btc_price)
         time.sleep(3)
 
 # 建立止损止盈单
@@ -423,7 +426,7 @@ def create_tpsl_order(type, ratio, price, poside):
         closePosition = True
     else:
         closePosition = False
-    the_order = bn.create_order(symbol,type,side,quantity,price,{
+    the_order = bn.create_order(symbol, type, side, quantity, price, {
         'stopPrice': stopPrice,
         'positionSide': positionSide,
         'closePosition': closePosition
@@ -433,31 +436,43 @@ def create_tpsl_order(type, ratio, price, poside):
 
 # 取消订单，基于输入的内容和类型进行订单的取消
 # 取消订单类型 全部，限价，止盈，止损，或者直接基于订单id来进行，也可以直接基于做空做多来进行操作
+# 实际应该以价格为主要依据进行挂单的取消，上述的要求并不能满足本程序的要求
+# 取消订单的同时必须及时修改数据库中的记录
+# def cancel_my_order(order_info):
+#     order_list = bn.fetch_open_orders(symbol)
+#     input_info = order_info.upper()
+#     typeList = ['LIMIT','STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET','ALL','LONG','SHORT']
+#     if len(order_list) == 0:
+#         print('无有效挂单！')
+#         return
+#     else:
+#         if input_info.isdigit():
+#             order_id = []
+#             for i in order_list:
+#                 order_id.append(i['order'])
+#             if input_info not in order_id:
+#                 print('请输入有效的挂单id！')
+#                 return
+#             else:
+#                 bn.cancel_order(order_info)
+#         elif input_info not in typeList:
+#             print('输入的参数错误！')
+#             return
+#         else:
+#             for i in order_list:
+#                 if i['info']['type'] == input_info or i['info']['positionSide'] == input_info:
+#                     bn.cancel_order(i['order'])
+#     return
+'''
+order_info = {
+    'stopPrice': xxx,
+    'positionSide': 'LONG'&'SHORT',
+    'type': xxx,
+    'id'
+}
+'''
+
 def cancel_my_order(order_info):
-    order_list = bn.fetch_open_orders(symbol)
-    input_info = order_info.upper()
-    typeList = ['LIMIT','STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET','ALL','LONG','SHORT']
-    if len(order_list) == 0:
-        print('无有效挂单！')
-        return
-    else:
-        if input_info.isdigit():
-            order_id = []
-            for i in order_list:
-                order_id.append(i['order'])
-            if input_info not in order_id:
-                print('请输入有效的挂单id！')
-                return
-            else:
-                bn.cancel_order(order_info)
-        elif input_info not in typeList:
-            print('输入的参数错误！')
-            return
-        else:
-            for i in order_list:
-                if i['info']['type'] == input_info or i['info']['positionSide'] == input_info:
-                    bn.cancel_order(i['order'])
-    return
 
         
 
@@ -498,3 +513,5 @@ def cancel_my_order(order_info):
 #pprint(bn.fetch_my_trades(symbol,limit=1))
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
 #pprint(bn.fetch_open_orders(symbol))
+#pprint(bn.fetch_orders(symbol,limit=4))
+pprint(bn.fetch_my_trades(symbol,limit = 2))

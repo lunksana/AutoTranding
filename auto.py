@@ -247,7 +247,7 @@ def db_insert(data_info):
             'order_positionSide': data_info['info']['positionSide'],
             'order_uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['info']['updateTime']/1000))
         }
-    elif: type(data_info) == 'float':
+    elif type(data_info) == 'float':
         month = time.strftime('%m',time.localtime(time.time()))
         col = price_db[month]
         col_dict = {

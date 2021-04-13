@@ -251,7 +251,7 @@ def db_insert(data_info):
         month = time.strftime('%m',time.localtime(time.time()))
         col = price_db[month]
         col_dict = {
-            'btc_price': btc_price,
+            'btc_price': data_info,
             'updatetime': time.strftime('%d-%H:%M:%S',time.localtime(time.time()))
         }
     else:
@@ -269,7 +269,6 @@ def db_insert(data_info):
     col.insert_one(col_dict)
     return
 
-    
 
 # 开单
 def make_order(btc_price, amount):
@@ -292,7 +291,9 @@ def make_order(btc_price, amount):
 '''
 也可以通过closed订单判断，成交的订单自动会进入closed订单中，fetch_closed_orders 'id' == fetch_my_traders 'order'
 '''
-def order_check(order_id):
+def order_check(order_id = None):
+    if order_id == None:
+        id_list = list(order_col.find({},{'_id': 0,'order_id': 1}))
     order_status = bn.fetch_order_status(order_id,symbol)
     while order_status == "open":
         time.sleep(3)
@@ -464,16 +465,166 @@ def create_tpsl_order(type, ratio, price, poside):
 #                     bn.cancel_order(i['order'])
 #     return
 '''
+[{'amount': 0.009,
+  'average': None,
+  'clientOrderId': 'android_X4i3W1JW5ag26BRIjUQS',
+  'cost': 0.0,
+  'datetime': '2021-04-13T03:11:17.686Z',
+  'fee': None,
+  'filled': 0.0,
+  'id': '17768902260',
+  'info': {'avgPrice': '0',
+           'clientOrderId': 'android_X4i3W1JW5ag26BRIjUQS',
+           'closePosition': False,
+           'cumQuote': '0',
+           'executedQty': '0',
+           'orderId': 17768902260,
+           'origQty': '0.009',
+           'origType': 'TAKE_PROFIT',
+           'positionSide': 'SHORT',
+           'price': '59960',
+           'priceProtect': True,
+           'reduceOnly': True,
+           'side': 'BUY',
+           'status': 'NEW',
+           'stopPrice': '60000',
+           'symbol': 'BTCUSDT',
+           'time': 1618283477686,
+           'timeInForce': 'GTE_GTC',
+           'type': 'TAKE_PROFIT',
+           'updateTime': 1618283477686,
+           'workingType': 'MARK_PRICE'},
+  'lastTradeTimestamp': None,
+  'postOnly': False,
+  'price': 59960.0,
+  'remaining': 0.009,
+  'side': 'buy',
+  'status': 'open',
+  'stopPrice': 60000.0,
+  'symbol': 'BTC/USDT',
+  'timeInForce': 'GTE_GTC',
+  'timestamp': 1618283477686,
+  'trades': None,
+  'type': 'take_profit'},
+ {'amount': 0.009,
+  'average': None,
+  'clientOrderId': 'android_SKXBLBNSxo4a8A642VdE',
+  'cost': 0.0,
+  'datetime': '2021-04-13T04:16:30.842Z',
+  'fee': None,
+  'filled': 0.0,
+  'id': '17770965625',
+  'info': {'avgPrice': '0',
+           'clientOrderId': 'android_SKXBLBNSxo4a8A642VdE',
+           'closePosition': False,
+           'cumQuote': '0',
+           'executedQty': '0',
+           'orderId': 17770965625,
+           'origQty': '0.009',
+           'origType': 'TAKE_PROFIT_MARKET',
+           'positionSide': 'SHORT',
+           'price': '0',
+           'priceProtect': True,
+           'reduceOnly': True,
+           'side': 'BUY',
+           'status': 'NEW',
+           'stopPrice': '60000',
+           'symbol': 'BTCUSDT',
+           'time': 1618287390842,
+           'timeInForce': 'GTE_GTC',
+           'type': 'TAKE_PROFIT_MARKET',
+           'updateTime': 1618287390842,
+           'workingType': 'MARK_PRICE'},
+  'lastTradeTimestamp': None,
+  'postOnly': False,
+  'price': 0.0,
+  'remaining': 0.009,
+  'side': 'buy',
+  'status': 'open',
+  'stopPrice': 60000.0,
+  'symbol': 'BTC/USDT',
+  'timeInForce': 'GTE_GTC',
+  'timestamp': 1618287390842,
+  'trades': None,
+  'type': 'take_profit_market'}
+  {'amount': 0.001,
+  'average': None,
+  'clientOrderId': 'android_ugamlTypfKwGxaS34H5K',
+  'cost': 0.0,
+  'datetime': '2021-04-13T05:19:15.533Z',
+  'fee': None,
+  'filled': 0.0,
+  'id': '17772746108',
+  'info': {'avgPrice': '0',
+           'clientOrderId': 'android_ugamlTypfKwGxaS34H5K',
+           'closePosition': False,
+           'cumQuote': '0',
+           'executedQty': '0',
+           'orderId': 17772746108,
+           'origQty': '0.001',
+           'origType': 'LIMIT',
+           'positionSide': 'LONG',
+           'price': '58000',
+           'priceProtect': False,
+           'reduceOnly': False,
+           'side': 'BUY',
+           'status': 'NEW',
+           'stopPrice': '0',
+           'symbol': 'BTCUSDT',
+           'time': 1618291155533,
+           'timeInForce': 'GTC',
+           'type': 'LIMIT',
+           'updateTime': 1618291155533,
+           'workingType': 'CONTRACT_PRICE'},
+  'lastTradeTimestamp': None,
+  'postOnly': False,
+  'price': 58000.0,
+  'remaining': 0.001,
+  'side': 'buy',
+  'status': 'open',
+  'stopPrice': 0.0,
+  'symbol': 'BTC/USDT',
+  'timeInForce': 'GTC',
+  'timestamp': 1618291155533,
+  'trades': None,
+  'type': 'limit'}]
 order_info = {
     'stopPrice': xxx,
     'positionSide': 'LONG'&'SHORT',
-    'type': xxx,
-    'id'
+    'type': xxx
+}
+order_dict = {
+    'id': {
+        'positionSide': xxx,
+        'type': xxx,
+        'price': xxx,
+        'stopPrice': xxx
+    }
 }
 '''
 
 def cancel_my_order(order_info):
-
+    order_list = bn.fetch_open_orders(symbol)
+    if len(order_list) == 0:
+        print('无有效挂单！')
+        return
+    elif type(order_info) != 'dict':
+        print('输入类型错误！')
+        return
+    else:
+        order_dict = {}
+        for i in order_list:
+            format_values = {
+                'positionSide': i['info']['positionSide'],
+                'type': i['type'],
+                'price': i['price'],
+                'stopPrice': float(i['info']['stopPrice'])
+            }
+            id_key = i['id']
+            order_dict[id_key] = format_values
+    
+            
+        
         
 
     
@@ -514,4 +665,4 @@ def cancel_my_order(order_info):
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
 #pprint(bn.fetch_open_orders(symbol))
 #pprint(bn.fetch_orders(symbol,limit=4))
-pprint(bn.fetch_my_trades(symbol,limit = 2))
+pprint(bn.fetch_open_orders(symbol))

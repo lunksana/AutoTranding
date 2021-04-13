@@ -1,6 +1,8 @@
 # 注意点：
 # 1.常见的挂单状态有open，closed，expired，canceled，在订单取消或者创建过程中都需要考虑这些状态
-# 2.成交额与手续费直接的关系
+# 2.成交额与手续费之间的关系
+# 3.设置一个检测函数，每次订单操作之前和之后都进行一次检测，同时设置一个定时任务，定期进行必要的订单检测
+# 4.合理使用mongodb的查询功能
 
 
 import ccxt
@@ -293,7 +295,7 @@ def make_order(btc_price, amount):
 '''
 def order_check(order_id = None):
     if order_id == None:
-        id_list = list(order_col.find({},{'_id': 0,'order_id': 1}))
+        id_find_list = list(order_col.find({},{'_id': 0,'order_id': 1}))
     order_status = bn.fetch_order_status(order_id,symbol)
     while order_status == "open":
         time.sleep(3)

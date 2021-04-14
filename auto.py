@@ -249,7 +249,7 @@ def db_insert(data_info):
             'order_positionSide': data_info['info']['positionSide'],
             'order_uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['info']['updateTime']/1000))
         }
-    elif type(data_info) == 'float':
+    elif isinstance(data_info,float):
         month = time.strftime('%m',time.localtime(time.time()))
         col = price_db[month]
         col_dict = {
@@ -295,8 +295,17 @@ def make_order(btc_price, amount):
 '''
 def order_check(order_id = None):
     if order_id == None:
-        id_find_list = list(order_col.find({},{'_id': 0,'order_id': 1}))
-    order_status = bn.fetch_order_status(order_id,symbol)
+        db_order_list = list(order_col.find({},{'_id': 0,'order_id': 1}))
+        # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
+        id_list = [x['order_id'] for x in db_order_list]
+#        order_list = bn.fetch_orders(symbol)
+#        order_dict = dict(zip([x['id'] for x in order_list],[x['status'] for x in order_list]))
+        for id in id_list:
+            order_status = bn.fetch_order_status(id, symbol)
+            if order_col.find_one({'order_id': id})['order_status'] != order_status:
+                order_col.find_one_and_update({'order_id': id}, {'$set': {'order_status': order_status}})
+    else:
+        order_status = bn.fetch_order_status(order_id,symbol)
     while order_status == "open":
         time.sleep(3)
         order_status = bn.fetch_order_status(order_id,symbol)
@@ -610,7 +619,7 @@ def cancel_my_order(order_info):
     if len(order_list) == 0:
         print('无有效挂单！')
         return
-    elif type(order_info) != 'dict':
+    elif isinstance(order_info,dict) != True:
         print('输入类型错误！')
         return
     else:
@@ -667,4 +676,4 @@ def cancel_my_order(order_info):
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
 #pprint(bn.fetch_open_orders(symbol))
 #pprint(bn.fetch_orders(symbol,limit=4))
-pprint(bn.fetch_open_orders(symbol))
+pprint(len([x['id'] for x in bn.fetch_orders(symbol)]))

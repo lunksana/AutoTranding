@@ -292,24 +292,33 @@ def make_order(btc_price, amount):
 # 判断挂单是否成交
 '''
 也可以通过closed订单判断，成交的订单自动会进入closed订单中，fetch_closed_orders 'id' == fetch_my_traders 'order'
+如果输入的是没有参数的情况，那将自动遍历订单，自动对已经发生变化的订单进行数据库操作
 '''
 def order_check(order_id = None):
     if order_id == None:
-        db_order_list = list(order_col.find({},{'_id': 0,'order_id': 1}))
+        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}))
+        db_trade_list = list(trade_col.find({},{'_id': 0, 'trade_id': 1}))
         # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
-        id_list = [x['order_id'] for x in db_order_list]
+        order_id_list = [x['order_id'] for x in db_order_list]
+        trade_id_list = [x['trade_id'] for x in db_trade_list]
 #        order_list = bn.fetch_orders(symbol)
 #        order_dict = dict(zip([x['id'] for x in order_list],[x['status'] for x in order_list]))
         for id in id_list:
             order_status = bn.fetch_order_status(id, symbol)
             if order_col.find_one({'order_id': id})['order_status'] != order_status:
                 order_col.find_one_and_update({'order_id': id}, {'$set': {'order_status': order_status}})
+            if order_status == 'closed' and id not in trade_id_list:
+                for trade in bn.fetch_my_trades(symbol):
+                    if trade['order'] == id:
+                        db_insert(trade)
     else:
-        order_status = bn.fetch_order_status(order_id,symbol)
-    while order_status == "open":
-        time.sleep(3)
-        order_status = bn.fetch_order_status(order_id,symbol)
-        continue
+        order_status = bn.fetch_order_status(order_id,symbol)    # 基于id获取订单状态
+        open_order_list = [x['id'] for x in bn.fetch_open_orders(symbol)]
+    
+    # while order_status == "open":
+    #     time.sleep(3)
+    #     order_status = bn.fetch_order_status(order_id,symbol)
+    #     continue
     if order_status == "closed":
         for trade in bn.fetch_my_trades(symbol):
             if trade['order'] == order_id:
@@ -674,6 +683,6 @@ def cancel_my_order(order_info):
 #print(positions_info(fetch_positions(symbol)))
 #pprint(bn.fetch_my_trades(symbol,limit=1))
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
-#pprint(bn.fetch_open_orders(symbol))
+pprint(bn.fetch_open_orders(symbol))
 #pprint(bn.fetch_orders(symbol,limit=4))
-pprint(len([x['id'] for x in bn.fetch_orders(symbol)]))
+#pprint(len([x['id'] for x in bn.fetch_orders(symbol)]))

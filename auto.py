@@ -303,7 +303,7 @@ def order_check(order_id = None):
         trade_id_list = [x['trade_id'] for x in db_trade_list]
 #        order_list = bn.fetch_orders(symbol)
 #        order_dict = dict(zip([x['id'] for x in order_list],[x['status'] for x in order_list]))
-        for id in id_list:
+        for id in order_id_list:
             order_status = bn.fetch_order_status(id, symbol)
             if order_col.find_one({'order_id': id})['order_status'] != order_status:
                 order_col.find_one_and_update({'order_id': id}, {'$set': {'order_status': order_status}})

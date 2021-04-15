@@ -3,6 +3,7 @@
 # 2.成交额与手续费之间的关系
 # 3.设置一个检测函数，每次订单操作之前和之后都进行一次检测，同时设置一个定时任务，定期进行必要的订单检测
 # 4.合理使用mongodb的查询功能
+# 5.定时任务参照 https://lz5z.com/Python%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F/
 
 
 import ccxt
@@ -243,6 +244,7 @@ def db_insert(data_info):
         col_dict = {
             'order_id': data_info['id'],
             'order_status': data_info['status'],
+            'order_type': data_info['info']['type'],
             'order_price': data_info['price'],
             'order_amount': data_info['amount'],
             'order_side': data_info['side'],
@@ -263,7 +265,7 @@ def db_insert(data_info):
             'trade_price': data_info['price'],
             'trade_amount': data_info['amount'],
             'trade_cost': data_info['fee']['cost'],
-            'trade_P&L': float(data_info['info']['realizedPn1']),
+            'trade_P&L': float(data_info['info']['realizedPnl']),
             'trade_side': data_info['info']['side'],
             'trade_positionSide': data_info['info']['positionSide'],
             'trade_time': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['timestamp']/1000))
@@ -295,12 +297,14 @@ def make_order(btc_price, amount):
 如果输入的是没有参数的情况，那将自动遍历订单，自动对已经发生变化的订单进行数据库操作
 '''
 def order_check(order_id = None):
+    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}))
+    db_trade_list = list(trade_col.find({},{'_id': 0, 'trade_id': 1}))
+    # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
+    order_id_list = [x['order_id'] for x in db_order_list]
+    trade_id_list = [x['trade_id'] for x in db_trade_list]
+    open_order_id_list = [x['id'] for x in bn.fetch_open_orders(symbol)]
     if order_id == None:
-        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}))
-        db_trade_list = list(trade_col.find({},{'_id': 0, 'trade_id': 1}))
-        # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
-        order_id_list = [x['order_id'] for x in db_order_list]
-        trade_id_list = [x['trade_id'] for x in db_trade_list]
+#        all_closed_id_list = [x['id'] for x in bn.fetch_orders(symbol) if x['status'] == 'closed']
 #        order_list = bn.fetch_orders(symbol)
 #        order_dict = dict(zip([x['id'] for x in order_list],[x['status'] for x in order_list]))
         for id in order_id_list:
@@ -311,23 +315,39 @@ def order_check(order_id = None):
                 for trade in bn.fetch_my_trades(symbol):
                     if trade['order'] == id:
                         db_insert(trade)
-    else:
+        if set(order_id_list).issuperset(set(open_order_id_list)):
+            pass
+        else:
+            for id in open_order_id_list:
+                if id not in order_id_list:
+                    for order in bn.fetch_open_orders(symbol):
+                        if order['id'] == id:
+                            db_insert(order)
+        return
+    elif order_id.isdigit():
         order_status = bn.fetch_order_status(order_id,symbol)    # 基于id获取订单状态
-        open_order_list = [x['id'] for x in bn.fetch_open_orders(symbol)]
-    
+        if order_id not in trade_id_list:   
     # while order_status == "open":
     #     time.sleep(3)
     #     order_status = bn.fetch_order_status(order_id,symbol)
     #     continue
-    if order_status == "closed":
-        for trade in bn.fetch_my_trades(symbol):
-            if trade['order'] == order_id:
-                print("挂单已成交！")
-                db_insert(trade)
-                order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': 'closed'}})
+            if order_status == 'closed':
+                for trade in bn.fetch_my_trades(symbol):
+                    if trade['order'] == order_id:
+                        db_insert(trade)
+                        order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': order_status}})
+            elif order_status != 'open':
+                order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': order_status}})
+            order_check()
+            return order_status
+        else:
+            order_check()
+            return order_status
     else:
-        order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': 'canceled'}})
-    return order_status    
+        print('输入错误！')
+        order_check()
+        return
+        
     
 
 
@@ -377,7 +397,7 @@ def positions_info(position_list):
     return positions_info 
          
 
-# 价格监测
+# 价格监测，定时记录价格变化
 def price_monitor(time):
     while True:
         btc_price = bn.fetch_ticker(symbol)['last']
@@ -484,166 +504,29 @@ def create_tpsl_order(type, ratio, price, poside):
 #                 if i['info']['type'] == input_info or i['info']['positionSide'] == input_info:
 #                     bn.cancel_order(i['order'])
 #     return
-'''
-[{'amount': 0.009,
-  'average': None,
-  'clientOrderId': 'android_X4i3W1JW5ag26BRIjUQS',
-  'cost': 0.0,
-  'datetime': '2021-04-13T03:11:17.686Z',
-  'fee': None,
-  'filled': 0.0,
-  'id': '17768902260',
-  'info': {'avgPrice': '0',
-           'clientOrderId': 'android_X4i3W1JW5ag26BRIjUQS',
-           'closePosition': False,
-           'cumQuote': '0',
-           'executedQty': '0',
-           'orderId': 17768902260,
-           'origQty': '0.009',
-           'origType': 'TAKE_PROFIT',
-           'positionSide': 'SHORT',
-           'price': '59960',
-           'priceProtect': True,
-           'reduceOnly': True,
-           'side': 'BUY',
-           'status': 'NEW',
-           'stopPrice': '60000',
-           'symbol': 'BTCUSDT',
-           'time': 1618283477686,
-           'timeInForce': 'GTE_GTC',
-           'type': 'TAKE_PROFIT',
-           'updateTime': 1618283477686,
-           'workingType': 'MARK_PRICE'},
-  'lastTradeTimestamp': None,
-  'postOnly': False,
-  'price': 59960.0,
-  'remaining': 0.009,
-  'side': 'buy',
-  'status': 'open',
-  'stopPrice': 60000.0,
-  'symbol': 'BTC/USDT',
-  'timeInForce': 'GTE_GTC',
-  'timestamp': 1618283477686,
-  'trades': None,
-  'type': 'take_profit'},
- {'amount': 0.009,
-  'average': None,
-  'clientOrderId': 'android_SKXBLBNSxo4a8A642VdE',
-  'cost': 0.0,
-  'datetime': '2021-04-13T04:16:30.842Z',
-  'fee': None,
-  'filled': 0.0,
-  'id': '17770965625',
-  'info': {'avgPrice': '0',
-           'clientOrderId': 'android_SKXBLBNSxo4a8A642VdE',
-           'closePosition': False,
-           'cumQuote': '0',
-           'executedQty': '0',
-           'orderId': 17770965625,
-           'origQty': '0.009',
-           'origType': 'TAKE_PROFIT_MARKET',
-           'positionSide': 'SHORT',
-           'price': '0',
-           'priceProtect': True,
-           'reduceOnly': True,
-           'side': 'BUY',
-           'status': 'NEW',
-           'stopPrice': '60000',
-           'symbol': 'BTCUSDT',
-           'time': 1618287390842,
-           'timeInForce': 'GTE_GTC',
-           'type': 'TAKE_PROFIT_MARKET',
-           'updateTime': 1618287390842,
-           'workingType': 'MARK_PRICE'},
-  'lastTradeTimestamp': None,
-  'postOnly': False,
-  'price': 0.0,
-  'remaining': 0.009,
-  'side': 'buy',
-  'status': 'open',
-  'stopPrice': 60000.0,
-  'symbol': 'BTC/USDT',
-  'timeInForce': 'GTE_GTC',
-  'timestamp': 1618287390842,
-  'trades': None,
-  'type': 'take_profit_market'}
-  {'amount': 0.001,
-  'average': None,
-  'clientOrderId': 'android_ugamlTypfKwGxaS34H5K',
-  'cost': 0.0,
-  'datetime': '2021-04-13T05:19:15.533Z',
-  'fee': None,
-  'filled': 0.0,
-  'id': '17772746108',
-  'info': {'avgPrice': '0',
-           'clientOrderId': 'android_ugamlTypfKwGxaS34H5K',
-           'closePosition': False,
-           'cumQuote': '0',
-           'executedQty': '0',
-           'orderId': 17772746108,
-           'origQty': '0.001',
-           'origType': 'LIMIT',
-           'positionSide': 'LONG',
-           'price': '58000',
-           'priceProtect': False,
-           'reduceOnly': False,
-           'side': 'BUY',
-           'status': 'NEW',
-           'stopPrice': '0',
-           'symbol': 'BTCUSDT',
-           'time': 1618291155533,
-           'timeInForce': 'GTC',
-           'type': 'LIMIT',
-           'updateTime': 1618291155533,
-           'workingType': 'CONTRACT_PRICE'},
-  'lastTradeTimestamp': None,
-  'postOnly': False,
-  'price': 58000.0,
-  'remaining': 0.001,
-  'side': 'buy',
-  'status': 'open',
-  'stopPrice': 0.0,
-  'symbol': 'BTC/USDT',
-  'timeInForce': 'GTC',
-  'timestamp': 1618291155533,
-  'trades': None,
-  'type': 'limit'}]
-order_info = {
-    'stopPrice': xxx,
-    'positionSide': 'LONG'&'SHORT',
-    'type': xxx
-}
-order_dict = {
-    'id': {
-        'positionSide': xxx,
-        'type': xxx,
-        'price': xxx,
-        'stopPrice': xxx
-    }
-}
-'''
 
-def cancel_my_order(order_info):
-    order_list = bn.fetch_open_orders(symbol)
-    if len(order_list) == 0:
+
+def cancel_my_order(price, side, type):
+    order_check()
+    open_order = bn.fetch_open_orders(symbol)
+    if len(open_order) == 0:
         print('无有效挂单！')
         return
-    elif isinstance(order_info,dict) != True:
-        print('输入类型错误！')
-        return
+    # elif isinstance(order_info,dict) != True:
+    #     print('输入类型错误！')
+    #     return
     else:
-        order_dict = {}
-        for i in order_list:
-            format_values = {
-                'positionSide': i['info']['positionSide'],
-                'type': i['type'],
-                'price': i['price'],
-                'stopPrice': float(i['info']['stopPrice'])
-            }
-            id_key = i['id']
-            order_dict[id_key] = format_values
-    
-            
+        order_id = order_col.find_one({'order_price': price, 'order_positionSide': side.upper(), 'order_type': type.upper()},{'_id': 0, 'order_id': 1})['order_id']
+        bn.cancel_order(order_id)
+        order_check()
+    return
+        
+ 
+ # 追踪策略
+ def tracking():
+     positions_price = positions_info(fetch_positions(symbol))
+     if len(positions_price) > 1:
+         side_list = positions_price.keys()           
         
         
 
@@ -683,6 +566,10 @@ def cancel_my_order(order_info):
 #print(positions_info(fetch_positions(symbol)))
 #pprint(bn.fetch_my_trades(symbol,limit=1))
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
-pprint(bn.fetch_open_orders(symbol))
+#pprint(bn.fetch_open_orders(symbol))
 #pprint(bn.fetch_orders(symbol,limit=4))
 #pprint(len([x['id'] for x in bn.fetch_orders(symbol)]))
+#print(order_check('17824277086'))
+#print(bn.fetch_order_status('17748191220',symbol))
+order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
+print(order_find['order_id'])

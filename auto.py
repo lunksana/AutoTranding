@@ -11,6 +11,7 @@ import time
 import pymongo
 import schedule
 import pandas as pd
+import threading
 import userapi
 from concurrent.futures import ThreadPoolExecutor
 from pprint import pprint
@@ -473,6 +474,7 @@ def create_tpsl_order(type, ratio, price, poside):
         'closePosition': closePosition
     })
     db_insert(the_order)
+    order_check()
     return the_order['id']
 
 # 取消订单，基于输入的内容和类型进行订单的取消
@@ -523,10 +525,22 @@ def cancel_my_order(price, side, type):
         
  
  # 追踪策略
- def tracking():
-     positions_price = positions_info(fetch_positions(symbol))
-     if len(positions_price) > 1:
-         side_list = positions_price.keys()           
+ # 基于持仓价格进行价格追踪，基于基础的价格进行网格操作，需要考虑持仓的时效性     
+def tracking(side):
+    positions_status = positions_info(fetch_positions(symbol))
+    if len(positions_status) > 0:
+        side_list = positions_status.keys()
+        if side not in side_list:
+            print('持仓方向错误！')
+            return
+        else:
+            position = positions_status[side]
+            pos_price = float(position['entryPrice'])
+            pos_amt = float(position['positionAmt'])
+            pos_lq_price = float(position['liquidationPrice'])
+    else:
+        print('此时无持仓！')
+        return     
         
         
 
@@ -563,7 +577,7 @@ def cancel_my_order(price, side, type):
 #     if i['symbol'] == 'BTCUSDT' and float(i['entryPrice']) > 0:
 #         pprint(i)
 
-#print(positions_info(fetch_positions(symbol)))
+pprint(positions_info(fetch_positions(symbol)))
 #pprint(bn.fetch_my_trades(symbol,limit=1))
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
 #pprint(bn.fetch_open_orders(symbol))
@@ -571,5 +585,5 @@ def cancel_my_order(price, side, type):
 #pprint(len([x['id'] for x in bn.fetch_orders(symbol)]))
 #print(order_check('17824277086'))
 #print(bn.fetch_order_status('17748191220',symbol))
-order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
-print(order_find['order_id'])
+# order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
+# print(order_find['order_id'])

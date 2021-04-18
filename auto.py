@@ -400,12 +400,13 @@ def positions_info(position_list):
     return positions_info 
          
 
-# 价格监测，定时记录价格变化
-def price_monitor(time):
+# 实时价格
+def price_now():
     while True:
         btc_price = bn.fetch_ticker(symbol)['last']
         db_insert(btc_price)
         time.sleep(3)
+
 
 # 建立止损止盈单
 '''
@@ -550,7 +551,15 @@ def tracking(side):
     else:
         print('此时无持仓！')
         return     
-        
+
+# 开仓价格及持仓方向
+def fetch_posprice():
+    pass
+
+# 价格追踪
+def price_auto(pos_price):
+    pass
+
         
 
     

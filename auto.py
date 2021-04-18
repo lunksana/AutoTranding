@@ -386,13 +386,15 @@ def fetch_positions(symbol):
                 positions_list.append(i)
     return positions_list
 
-# 建立持仓字典，方便查询
+# 建立持仓字典，写入数据库，方便查询
 def positions_info(position_list):
     if len(position_list) > 1:
         if position_list[0]['positionSide'] == 'LONG':
             positions_info = dict(zip(['LONG','SHORT'],[position_list[0],position_list[1]]))
         else:
             positions_info = dict(zip(['SHORT','LONG'],[position_list[0],position_list[1]]))
+    elif len(position_list) == 0:
+        positions_info = None
     else:
         positions_info = dict([(position_list[0]['positionSide'],position_list[0])])
     return positions_info 
@@ -538,6 +540,13 @@ def tracking(side):
             pos_price = float(position['entryPrice'])
             pos_amt = float(position['positionAmt'])
             pos_lq_price = float(position['liquidationPrice'])
+            pos_lev = int(position['leverage'])
+            grids_price = []
+            safe_ch = abs(pos_lq_price - pos_price)
+            if side == 'LONG':
+                sl_price = pos_price - pos_price * 0.25 / pos_lev
+            else:
+                sl_price = pos_price / (1 - 0.25 / pos_lev)
     else:
         print('此时无持仓！')
         return     

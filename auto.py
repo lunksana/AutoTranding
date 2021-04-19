@@ -530,11 +530,6 @@ def cancel_my_order(price, side, type):
  # 追踪策略
  # 基于持仓价格进行价格追踪，基于基础的价格进行网格操作，需要考虑持仓的时效性     
 
-            if side == 'LONG':
-                sl_price = pos_price - pos_price * 0.25 / pos_lev
-            else:
-                sl_price = pos_price / (1 - 0.25 / pos_lev)
-
 # 测试持仓情况
 def check_positions():
     positions = positions_info(fetch_positions(symbol))
@@ -555,11 +550,20 @@ def check_positions():
     return format_pos
         
 
-# 价格追踪
-def price_auto(pos_price):
-    pass
-
-        
+# 价格追踪，输入初始持仓价格，优先设置止损位，之后使用等差数列预生成网格价格点位
+def price_auto(pos_price, side):
+    diff_price = avg_ch('1h')
+    pos_lev = 25
+    if side == 'LONG':
+        sl_price = pos_price - pos_price * 0.25 / pos_lev
+        price_list = [pos_price + x * diff_price for x in range(0,5)]
+    else:
+        sl_price = pos_price / (1 - 0.25 / pos_lev)
+        price_list = [pos_price - x * diff_price for x in range(0,5)]
+    # 完成初始的价格模型
+    btc_price = bn.fetch_ticker(symbol)['last']
+    while True:
+        pass
 
     
 
@@ -604,4 +608,5 @@ def price_auto(pos_price):
 #print(bn.fetch_order_status('17748191220',symbol))
 # order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
 # print(order_find['order_id'])
-print(avg_ch('15m'))
+print(avg_ch('1h'))
+print(price_auto(54000,'LONG'))

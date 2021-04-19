@@ -386,7 +386,7 @@ def fetch_positions(symbol):
                 positions_list.append(i)
     return positions_list
 
-# 建立持仓字典，写入数据库，方便查询
+# 建立持仓字典，方便查询
 def positions_info(position_list):
     if len(position_list) > 1:
         if position_list[0]['positionSide'] == 'LONG':
@@ -529,32 +529,31 @@ def cancel_my_order(price, side, type):
  
  # 追踪策略
  # 基于持仓价格进行价格追踪，基于基础的价格进行网格操作，需要考虑持仓的时效性     
-def tracking(side):
-    positions_status = positions_info(fetch_positions(symbol))
-    if len(positions_status) > 0:
-        side_list = positions_status.keys()
-        if side not in side_list:
-            print('持仓方向错误！')
-            return
-        else:
-            position = positions_status[side]
-            pos_price = float(position['entryPrice'])
-            pos_amt = float(position['positionAmt'])
-            pos_lq_price = float(position['liquidationPrice'])
-            pos_lev = int(position['leverage'])
-            grids_price = []
-            safe_ch = abs(pos_lq_price - pos_price)
+
             if side == 'LONG':
                 sl_price = pos_price - pos_price * 0.25 / pos_lev
             else:
                 sl_price = pos_price / (1 - 0.25 / pos_lev)
-    else:
-        print('此时无持仓！')
-        return     
 
-# 开仓价格及持仓方向
-def fetch_posprice():
-    pass
+# 测试持仓情况
+def check_positions():
+    positions = positions_info(fetch_positions(symbol))
+    format_pos = {}
+    if len(positions) >= 1:
+        for pos_side in positions.keys():
+            format_pos[pos_side] = {
+                'pos_price': float(positions[pos_side]['entryPrice']),
+                'pos_amt': float(positions[pos_side]['positionAmt']),
+                'pos_lq_price': float(positions[pos_side]['liquidationPrice']),
+                'pos_lev': int(positions[pos_side]['leverage']),
+                'pos_unp': float(positions[pos_side]['unRealizedProfit']),
+                'pos_wallet': float(positions[pos_side]['isolatedWallet'])
+            }
+    else:
+        print('此时没有持仓！')
+        return
+    return format_pos
+        
 
 # 价格追踪
 def price_auto(pos_price):
@@ -595,7 +594,7 @@ def price_auto(pos_price):
 #     if i['symbol'] == 'BTCUSDT' and float(i['entryPrice']) > 0:
 #         pprint(i)
 
-pprint(positions_info(fetch_positions(symbol)))
+#pprint(positions_info(fetch_positions(symbol)))
 #pprint(bn.fetch_my_trades(symbol,limit=1))
 #pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
 #pprint(bn.fetch_open_orders(symbol))
@@ -605,3 +604,4 @@ pprint(positions_info(fetch_positions(symbol)))
 #print(bn.fetch_order_status('17748191220',symbol))
 # order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
 # print(order_find['order_id'])
+print(avg_ch('15m'))

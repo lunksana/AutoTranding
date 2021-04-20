@@ -42,7 +42,14 @@ bn = ccxt.binance({
 # 价格涨幅波动
 #@trace
 def avg_ch(time):
-    ohlcv = bn.fetchOHLCV('BTC/USDT',time)
+    time_list = ["5m","15m","30m","1h","2h","4h","6h","12h","1d"]
+    limit_list = [2016,672,336,168,84,28,14,7]
+    if time not in time_list:
+        print('时间错误！')
+        return
+    else:
+        localimit = limit_list[time_list.index(time)]            
+    ohlcv = bn.fetchOHLCV(symbol,time,limit=localimit)
     ch_sum = 0
     for i in ohlcv:
         ch_sum += abs(i[2]-i[3])
@@ -551,19 +558,32 @@ def check_positions():
         
 
 # 价格追踪，输入初始持仓价格，优先设置止损位，之后使用等差数列预生成网格价格点位
-def price_auto(pos_price, side):
+def price_auto(pos_price, side, pos_lev):
     diff_price = avg_ch('1h')
-    pos_lev = 25
     if side == 'LONG':
         sl_price = pos_price - pos_price * 0.25 / pos_lev
-        price_list = [pos_price + x * diff_price for x in range(0,5)]
+        price_list = [pos_price + x * diff_price for x in range(0,10)]
     else:
         sl_price = pos_price / (1 - 0.25 / pos_lev)
-        price_list = [pos_price - x * diff_price for x in range(0,5)]
+        price_list = [pos_price - x * diff_price for x in range(0,10)]
     # 完成初始的价格模型
+    return sl_price, price_list
+
+def Autotrading():
     btc_price = bn.fetch_ticker(symbol)['last']
-    while True:
-        pass
+    
+def loop():
+    print(threading.current_thread().name)
+    btc_price = bn.fetch_ticker(symbol)['last']
+    while btc_price < 55500:
+        print(btc_price)
+        
+    
+
+if __name__ == '__main__':
+    
+
+        
 
     
 
@@ -608,5 +628,3 @@ def price_auto(pos_price, side):
 #print(bn.fetch_order_status('17748191220',symbol))
 # order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
 # print(order_find['order_id'])
-print(avg_ch('1h'))
-print(price_auto(54000,'LONG'))

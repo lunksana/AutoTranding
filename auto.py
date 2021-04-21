@@ -584,7 +584,9 @@ def Autotrading(side):
             limit_price = pos_price + price_step
             if btc_price > pos_price:
                 while btc_price < limit_price:
-                    pass
+                    tmp_price = limit_price + 50
+                    create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side)
+                    time.sleep(5)
     else:
         sl_price = pos_price / (1 - 0.25 / pos_lev)
     

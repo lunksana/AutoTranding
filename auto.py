@@ -569,8 +569,26 @@ def price_auto(pos_price, side, pos_lev):
     # 完成初始的价格模型
     return sl_price, price_list
 
-def Autotrading():
+#追踪价格，按照阶梯方式进行订单生成和取消
+def Autotrading(side):
     btc_price = bn.fetch_ticker(symbol)['last']
+    price_step = avg_ch('5m')
+    pos_price = check_positions()[side]['pos_price']
+    pos_lev = check_positions()[side]['pos_lev']
+    if side == 'LONG':
+        sl_price = pos_price - pos_price * 0.25 / pos_lev
+        if btc_price < sl_price:
+            create_tpsl_order('STOP_MARKET', None, None, side)
+        else:
+            create_tpsl_order('STOP', 1, sl_price, side)
+            limit_price = pos_price + price_step
+            if btc_price > pos_price:
+                while btc_price < limit_price:
+                    pass
+    else:
+        sl_price = pos_price / (1 - 0.25 / pos_lev)
+    
+    
     
 def loop():
     print(threading.current_thread().name)
@@ -581,7 +599,7 @@ def loop():
     
 
 if __name__ == '__main__':
-    
+    print(avg_ch('5m'))
 
         
 

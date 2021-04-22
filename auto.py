@@ -578,15 +578,18 @@ def Autotrading(side):
     if side == 'LONG':
         sl_price = pos_price - pos_price * 0.25 / pos_lev
         if btc_price < sl_price:
-            create_tpsl_order('STOP_MARKET', None, None, side)
+            quick_order = create_tpsl_order('STOP_MARKET', None, None, side) #快速自救
         else:
-            create_tpsl_order('STOP', 1, sl_price, side)
+            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #警戒订单
             limit_price = pos_price + price_step
             if btc_price > pos_price:
                 while btc_price < limit_price:
-                    tmp_price = limit_price + 50
-                    create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side)
+                    tmp_price = pos_price - 50
+                    defense_order = create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side) #防守订单
                     time.sleep(5)
+                if btc_price > limit_price:
+                    limit_price += price_step
+                    
     else:
         sl_price = pos_price / (1 - 0.25 / pos_lev)
     

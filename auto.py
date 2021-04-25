@@ -569,7 +569,9 @@ def price_auto(pos_price, side, pos_lev):
     # 完成初始的价格模型
     return sl_price, price_list
 
-#追踪价格，按照阶梯方式进行订单生成和取消
+# 追踪价格，按照阶梯方式进行订单生成和取消
+# 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
+# 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
     btc_price = bn.fetch_ticker(symbol)['last']
     price_step = avg_ch('5m')

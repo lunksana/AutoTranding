@@ -569,28 +569,50 @@ def price_auto(pos_price, side, pos_lev):
     # 完成初始的价格模型
     return sl_price, price_list
 
+def mesh_price(pos_price,side):
+    price_step = avg_ch('5m')
+    if side == 'LONG':
+        mesh_price = pos_price + price_step
+    else:
+        mesh_price = pos_price - price_step
+    return mesh_price
+
 # 追踪价格，按照阶梯方式进行订单生成和取消
 # 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
-    btc_price = bn.fetch_ticker(symbol)['last']
-    price_step = avg_ch('5m')
-    pos_price = check_positions()[side]['pos_price']
-    pos_lev = check_positions()[side]['pos_lev']
-    if side == 'LONG':
-        sl_price = pos_price - pos_price * 0.25 / pos_lev
-        if btc_price < sl_price:
-            quick_order = create_tpsl_order('STOP_MARKET', None, None, side) #快速自救
-        else:
-            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #警戒订单
-            limit_price = pos_price + price_step
-            if btc_price > pos_price:
-                while btc_price < limit_price:
-                    tmp_price = pos_price - 50
-                    defense_order = create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side) #防守订单
-                    time.sleep(5)
-                if btc_price > limit_price:
-                    limit_price += price_step
+    if side not in check_positions().keys():
+        return
+    else:
+        if side == 'LONG':
+            alert_order = None
+            defense_order = None
+            defense_count = 0
+            while True:
+                try:
+                    check_positions()[side]
+                except KeyError:
+                    return
+                else:
+                    if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] - check_positions()[side]['pos_price'] * 0.25 / check_positions()[side]['pos_lev']:
+                        quick_order = create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
+                        return
+                    else：
+                        btc_price = bn.fetch_ticker(symbol)['last']
+                        price_step = avg_ch('5m')
+                        pos_price = check_positions()[side]['pos_price']
+                        pos_lev = check_positions()[side]['pos_lev']
+                        limit_price = pos_price + price_step 
+                        sl_price = pos_price - pos_price * 0.25 / pos_lev
+                        if alert_order == None:
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                        if btc_price > pos_price and btc_price < limit_price:
+                            tmp_price = pos_price - 50
+                            defense_order = create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side) #防守订单
+                            defense_count += 1
+                            time.sleep(5)
+                            if btc_price > limit_price:
+                                limit_price += price_step
                     
     else:
         sl_price = pos_price / (1 - 0.25 / pos_lev)

@@ -588,6 +588,7 @@ def Autotrading(side):
             alert_order = None
             defense_order = None
             defense_count = 0
+            limit_price = check_positions()[side]['pos_price']
             while True:
                 try:
                     check_positions()[side]
@@ -602,17 +603,20 @@ def Autotrading(side):
                         price_step = avg_ch('5m')
                         pos_price = check_positions()[side]['pos_price']
                         pos_lev = check_positions()[side]['pos_lev']
-                        limit_price = pos_price + price_step 
+                        limit_price = limit_price + price_step * (defense_count + 1) 
                         sl_price = pos_price - pos_price * 0.25 / pos_lev
                         if alert_order == None:
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
                         if btc_price > pos_price and btc_price < limit_price:
-                            tmp_price = pos_price - 50
+                            if price_step < 50:
+                                tmp_price = pos_price - price_step
+                            else:
+                                tmp_price = pos_price - 50
                             defense_order = create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side) #防守订单
                             defense_count += 1
                             time.sleep(5)
-                            if btc_price > limit_price:
-                                limit_price += price_step
+                        else:
+                            pos_price = limit_price
                     
     else:
         sl_price = pos_price / (1 - 0.25 / pos_lev)

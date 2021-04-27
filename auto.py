@@ -599,7 +599,7 @@ def Autotrading(side):
                     if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] - check_positions()[side]['pos_price'] * 0.25 / check_positions()[side]['pos_lev']:
                         quick_order = create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                         return
-                    else：
+                    else:
                         btc_price = bn.fetch_ticker(symbol)['last']
                         price_step = avg_ch('5m')
                         pos_lev = check_positions()[side]['pos_lev']

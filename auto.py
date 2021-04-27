@@ -586,12 +586,13 @@ def Autotrading(side):
     else:
         if side == 'LONG':
             alert_order = None
-            defense_order = None
+            defense_order_dict = {}
             defense_count = 0
-            limit_price = check_positions()[side]['pos_price']
+            limit_price = 0
+            limit_list = []
             while True:
                 try:
-                    check_positions()[side]
+                    pos_price = check_positions()[side]
                 except KeyError:
                     return
                 else:
@@ -601,19 +602,18 @@ def Autotrading(side):
                     else：
                         btc_price = bn.fetch_ticker(symbol)['last']
                         price_step = avg_ch('5m')
-                        pos_price = check_positions()[side]['pos_price']
                         pos_lev = check_positions()[side]['pos_lev']
-                        limit_price = limit_price + price_step * (defense_count + 1) 
+                        limit_price = pos_price + price_step * (defense_count + 1)
+                        limit_list.append(limit_list) 
                         sl_price = pos_price - pos_price * 0.25 / pos_lev
                         if alert_order == None:
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
                         if btc_price > pos_price and btc_price < limit_price:
-                            if price_step < 50:
-                                tmp_price = pos_price - price_step
-                            else:
-                                tmp_price = pos_price - 50
-                            defense_order = create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side) #防守订单
-                            defense_count += 1
+                            defense_price = pos_price - price_step
+                            if defense_price not in defense_order_dict.keys():
+                                defense_order = create_tpsl_order('TAKE_PROFIT', 1, tmp_price, side) #防守订单
+                                defense_count += 1
+                                defense_order_dict[defense_price] = defense_order
                             time.sleep(5)
                         else:
                             pos_price = limit_price

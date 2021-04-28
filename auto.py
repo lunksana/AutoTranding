@@ -622,8 +622,6 @@ def Autotrading(side):
                                 time.sleep(5)
                         else:
                             pos_price = limit_price
-                    
-    else:
         sl_price = pos_price / (1 - 0.25 / pos_lev)
     
     
@@ -637,7 +635,10 @@ def loop():
     
 
 if __name__ == '__main__':
-    print(avg_ch('5m'))
+    print('5m:',avg_ch('5m'))
+    print('15m:',avg_ch('15m'))
+    print('30m:',avg_ch('30m'))
+    print('1h:',avg_ch('1h'))
 
         
 

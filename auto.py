@@ -602,24 +602,25 @@ def Autotrading(side):
                     else:
                         price_step = avg_ch('5m')
                         pos_lev = check_positions()[side]['pos_lev']
-                        limit_price = pos_price + price_step * (defense_count + 1)
-                        trigger_price = limit_price - price_step * defense_count
+                        limit_price = pos_price + price_step
+                        trigger_price = pos_price
                         sl_price = pos_price - pos_price * 0.25 / pos_lev
                         if alert_order == None:
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
                         while bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
-                                defense_price = trigger_price - price_step
+                                defense_price = int(trigger_price - price_step * 0.618)
                                 if defense_price not in defense_order_dict.keys():
                                     defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
-                                    defense_count += 1
-                                    defense_order_dict[defense_price] = defense_order
-                                time.sleep(5)
+                                    limit_count += 1
+                                    trigger_count += 1
+                                time.sleep(3)
                             else:
-                                limit_price += avg_ch('15m')
+                                price_setp = avg_ch('5m')
+                                limit_price += price_setp
                                 trigger_price += price_step
-                                time.sleep(5)
+                                time.sleep(3)
         sl_price = pos_price / (1 - 0.25 / pos_lev)
     
     

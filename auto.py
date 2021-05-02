@@ -581,6 +581,7 @@ def mesh_price(pos_price,side):
 # 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
+    pos_lev = check_positions()[side]['pos_lev']
     if side not in check_positions().keys():
         return
     else:
@@ -600,8 +601,7 @@ def Autotrading(side):
                         create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                         return
                     else:
-                        price_step = avg_ch('5m')
-                        pos_lev = check_positions()[side]['pos_lev']
+                        price_step = avg_ch('15m')
                         limit_price = pos_price + price_step
                         trigger_price = pos_price
                         sl_price = pos_price - pos_price * 0.25 / pos_lev
@@ -611,17 +611,56 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
                                 defense_price = int(trigger_price - price_step * 0.618)
-                                if defense_price not in defense_order_dict.keys():
+                                if trigger_price not in defense_order_dict.keys():
                                     defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
-                                    limit_count += 1
-                                    trigger_count += 1
+                                    defense_count += 1
+                                    defense_order_dict[trigger_price] = defense_order
+                                else:
+                                    continue
                                 time.sleep(3)
                             else:
-                                price_setp = avg_ch('5m')
+                                price_setp = avg_ch('15m')
                                 limit_price += price_setp
                                 trigger_price += price_step
                                 time.sleep(3)
-        sl_price = pos_price / (1 - 0.25 / pos_lev)
+        else:
+            alert_order = None
+            defense_order_dict = {}
+            defense_count = 0
+            limit_price = 0
+            trigger_price = 0
+            while True:
+                try:
+                    pos_price = check_positions()[side]
+                except KeyError:
+                    return
+                else:
+                    if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] / (1 - 0.25 / check_positions()[side]['pos_lev']):
+                        create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
+                        return
+                    else:
+                        price_step = avg_ch('15m')
+                        limit_price = pos_price - price_step
+                        trigger_price = pos_price
+                        sl_price = pos_price / (1 - 0.25 / pos_lev)
+                        if alert_order == None:
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                        while bn.fetch_ticker(symbol)['last'] < trigger_price:
+                            btc_price = bn.fetch_ticker(symbol)['last']
+                            if btc_price > limit_price:
+                                defense_price = int(trigger_price + price_step * 0.618)
+                                if trigger_price not in defense_order_dict.keys():
+                                    defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
+                                    defense_count += 1
+                                    defense_order_dict[trigger_price] = defense_order
+                                else:
+                                    continue
+                                time.sleep(3)
+                            else:
+                                price_setp = avg_ch('15m')
+                                limit_price -= price_setp
+                                trigger_price -= price_step
+                                time.sleep(3)
     
     
     

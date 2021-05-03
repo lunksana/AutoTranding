@@ -622,6 +622,11 @@ def Autotrading(side):
                                 price_setp = avg_ch('15m')
                                 limit_price += price_setp
                                 trigger_price += price_step
+                                if defense_count > 1:
+                                    try:
+                                        bn.cancel_order(defense_order_dict[pos_price])
+                                    except:
+                                        pass
                                 time.sleep(3)
         else:
             alert_order = None
@@ -677,6 +682,11 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
+    try:
+        bn.cancel_order('39403s')
+    except Exception as e:
+        if e != None:
+            print("error")
 
         
 

@@ -610,7 +610,10 @@ def Autotrading(side):
                         while bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
-                                defense_price = int(trigger_price - price_step * 0.618)
+                                if trigger_price == pos_price:
+                                    defense_price = int(trigger_price - price_step * 0.618)
+                                else:
+                                    defense_price = int(trigger_price - price_step * 0.5)
                                 if trigger_price not in defense_order_dict.keys():
                                     defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
                                     defense_count += 1
@@ -625,8 +628,10 @@ def Autotrading(side):
                                 if defense_count > 1:
                                     try:
                                         bn.cancel_order(defense_order_dict[pos_price])
-                                    except:
-                                        pass
+                                    except Exception as e:
+                                        if e != None:
+                                            
+                                        
                                 time.sleep(3)
         else:
             alert_order = None

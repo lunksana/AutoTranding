@@ -613,7 +613,8 @@ def Autotrading(side):
                                 if trigger_price == pos_price:
                                     defense_price = int(trigger_price - price_step * 0.618)
                                 else:
-                                    defense_price = int(trigger_price - price_step * 0.5)
+                                    adj_value = round((trigger_price - pos_price) / price_step) - 1
+                                    defense_price = int(pos_price + price_step * adj_value * (0.5 + 0.1 * adj_value))
                                 if trigger_price not in defense_order_dict.keys():
                                     defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
                                     defense_count += 1

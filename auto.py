@@ -257,7 +257,7 @@ def db_insert(data_info):
             'order_amount': data_info['amount'],
             'order_side': data_info['side'],
             'order_positionSide': data_info['info']['positionSide'],
-            'order_uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['info']['updateTime']/1000))
+            'order_uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(data_info['info']['updateTime']) / 1000))
         }
     elif isinstance(data_info,float):
         month = time.strftime('%m',time.localtime(time.time()))
@@ -276,7 +276,7 @@ def db_insert(data_info):
             'trade_P&L': float(data_info['info']['realizedPnl']),
             'trade_side': data_info['info']['side'],
             'trade_positionSide': data_info['info']['positionSide'],
-            'trade_time': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data_info['timestamp']/1000))
+            'trade_time': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(data_info['timestamp']) / 1000))
         }
     col.insert_one(col_dict)
     return
@@ -582,8 +582,8 @@ def mesh_price(pos_price,side):
 # 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
-    pos_lev = check_positions()[side]['pos_lev']
     if check_positions(side):
+        pos_lev = check_positions()[side]['pos_lev']
         alert_order = None
         defense_order_dict = {}
         limit_price = 0
@@ -621,14 +621,15 @@ def Autotrading(side):
                             else:
                                 time.sleep(5)
                                 continue
-                            time.sleep(3)
+                            print(defense_price)
                         else:
                             price_setp = avg_ch('15m')
                             limit_price += price_setp
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0])
-                            time.sleep(3)
+                print(trigger_price)
+                time.sleep(3)
         else:
             while check_positions(side):
                 pos_price = check_positions()[side]['pos_price']
@@ -661,17 +662,17 @@ def Autotrading(side):
                             else:
                                 time.sleep(5)
                                 continue
-                            time.sleep(3)
-                         else:
+                            print(defense_price)
+                        else:
                             price_setp = avg_ch('15m')
                             limit_price -= price_setp
                             trigger_price -= price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0])
-                            time.sleep(3)
+                time.sleep(3)
         order_check()
     else:
-        pass
+        print('无持仓！')
     
     
     
@@ -739,4 +740,4 @@ if __name__ == '__main__':
 #print(bn.fetch_order_status('17748191220',symbol))
 # order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
 # print(order_find['order_id'])
-print(check_positions())
+Autotrading('LONG')

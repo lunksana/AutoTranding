@@ -538,10 +538,10 @@ def cancel_my_order(price, side, type):
  # 基于持仓价格进行价格追踪，基于基础的价格进行网格操作，需要考虑持仓的时效性     
 
 # 测试持仓情况
-def check_positions():
+def check_positions(side = None):
     positions = positions_info(fetch_positions(symbol))
     format_pos = {}
-    if len(positions) >= 1:
+    if positions != None and len(positions) >= 1:
         for pos_side in positions.keys():
             format_pos[pos_side] = {
                 'pos_price': float(positions[pos_side]['entryPrice']),
@@ -551,8 +551,9 @@ def check_positions():
                 'pos_unp': float(positions[pos_side]['unRealizedProfit']),
                 'pos_wallet': float(positions[pos_side]['isolatedWallet'])
             }
+        if side != None and side in positions.keys():
+            return True
     else:
-        print('此时没有持仓！')
         return False
     return format_pos
         
@@ -582,96 +583,95 @@ def mesh_price(pos_price,side):
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
     pos_lev = check_positions()[side]['pos_lev']
-    if side not in check_positions().keys():
-        return
-    else:
+    if check_positions(side):
+        alert_order = None
+        defense_order_dict = {}
+        limit_price = 0
+        defense_order_list = []
+        trigger_price = 0
         if side == 'LONG':
-            alert_order = None
-            defense_order_dict = {}
-            limit_price = 0
-            defense_order_list = []
-            trigger_price = 0
-            while True:
-                try:
-                    pos_price = check_positions()[side]
-                except KeyError:
+            while check_positions(side):
+                pos_price = check_positions()[side]['pos_price']
+                if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] - check_positions()[side]['pos_price'] * 0.25 / check_positions()[side]['pos_lev']:
+                    create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
-                    if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] - check_positions()[side]['pos_price'] * 0.25 / check_positions()[side]['pos_lev']:
-                        create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
-                        break
-                    else:
-                        price_step = avg_ch('15m')
-                        limit_price = pos_price + price_step
-                        trigger_price = pos_price
-                        sl_price = pos_price - pos_price * 0.25 / pos_lev
-                        if alert_order == None:
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
-                        while bn.fetch_ticker(symbol)['last'] > trigger_price:
-                            btc_price = bn.fetch_ticker(symbol)['last']
-                            if btc_price < limit_price:
-                                if trigger_price == pos_price:
-                                    adj_value = round((trigger_price - pos_price) / price_step) - 1
-                                    defense_price = int(trigger_price - price_step * 0.382)
-                                    tmp_i = 1
-                                    while defense_price < sl_price:
-                                        defense_price = int(trigger_price - price_step * 0.382 * tmp_i)
-                                        tmp_i += 0.1                                       
-                                else:
-                                    defense_price = int(pos_price + avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
-                                if trigger_price not in defense_order_dict.keys():
-                                    defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
-                                    defense_order_list.append(defense_order)
-                                    defense_order_dict[trigger_price] = defense_order
-                                else:
-                                    time.sleep(5)
-                                    continue
-                                time.sleep(3)
+                    price_step = avg_ch('15m')
+                    limit_price = pos_price + price_step
+                    trigger_price = pos_price
+                    sl_price = pos_price - pos_price * 0.25 / pos_lev
+                    if alert_order == None:
+                        alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                    if bn.fetch_ticker(symbol)['last'] > trigger_price:
+                        btc_price = bn.fetch_ticker(symbol)['last']
+                        if btc_price < limit_price:
+                            adj_value = round((trigger_price - pos_price) / price_step) - 1
+                            if trigger_price == pos_price:
+                                defense_price = int(trigger_price - price_step * 0.382)
+                                tmp_i = 1
+                                while defense_price < sl_price:
+                                    defense_price = int(trigger_price - price_step * 0.382 * tmp_i)
+                                    tmp_i += 0.1                                       
                             else:
-                                price_setp = avg_ch('15m')
-                                limit_price += price_setp
-                                trigger_price += price_step
-                                if len(defense_order_list) > 3:
-                                    bn.cancel_order(defense_order_list[0])
-                                time.sleep(3)
+                                defense_price = int(pos_price + avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
+                            if trigger_price not in defense_order_dict.keys():
+                                defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
+                                defense_order_list.append(defense_order)
+                                defense_order_dict[trigger_price] = defense_order
+                            else:
+                                time.sleep(5)
+                                continue
+                            time.sleep(3)
+                        else:
+                            price_setp = avg_ch('15m')
+                            limit_price += price_setp
+                            trigger_price += price_step
+                            if len(defense_order_list) > 3:
+                                bn.cancel_order(defense_order_list[0])
+                            time.sleep(3)
         else:
-            alert_order = None
-            defense_order_dict = {}
-            defense_count = 0
-            limit_price = 0
-            trigger_price = 0
-            while True:
-                try:
-                    pos_price = check_positions()[side]
-                except KeyError:
-                    return
+            while check_positions(side):
+                pos_price = check_positions()[side]['pos_price']
+                if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] / (1 - 0.25 / check_positions()[side]['pos_lev']):
+                    create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
+                    break
                 else:
-                    if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] / (1 - 0.25 / check_positions()[side]['pos_lev']):
-                        create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
-                        return
-                    else:
-                        price_step = avg_ch('15m')
-                        limit_price = pos_price - price_step
-                        trigger_price = pos_price
-                        sl_price = pos_price / (1 - 0.25 / pos_lev)
-                        if alert_order == None:
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
-                        while bn.fetch_ticker(symbol)['last'] < trigger_price:
-                            btc_price = bn.fetch_ticker(symbol)['last']
-                            if btc_price > limit_price:
+                    price_step = avg_ch('15m')
+                    limit_price = pos_price - price_step
+                    trigger_price = pos_price
+                    sl_price = pos_price / (1 - 0.25 / pos_lev)
+                    if alert_order == None:
+                        alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                    if bn.fetch_ticker(symbol)['last'] < trigger_price:
+                        btc_price = bn.fetch_ticker(symbol)['last']
+                        if btc_price > limit_price:
+                            adj_value = round((pos_price - trigger_price) / price_step) - 1
+                            if trigger_price == pos_price:
                                 defense_price = int(trigger_price + price_step * 0.618)
-                                if trigger_price not in defense_order_dict.keys():
-                                    defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
-                                    defense_count += 1
-                                    defense_order_dict[trigger_price] = defense_order
-                                else:
-                                    continue
-                                time.sleep(3)
+                                tmp_i = 1
+                                while defense_price > sl_price:
+                                    defense_price = int(pos_price + price_step * 0.618 * tmp_i)
+                                    tmp_i -= 0.1                                       
                             else:
-                                price_setp = avg_ch('15m')
-                                limit_price -= price_setp
-                                trigger_price -= price_step
-                                time.sleep(3)
+                                defense_price = int(pos_price - avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
+                            if trigger_price not in defense_order_dict.keys():
+                                defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
+                                defense_order_list.append(defense_order)
+                                defense_order_dict[trigger_price] = defense_order
+                            else:
+                                time.sleep(5)
+                                continue
+                            time.sleep(3)
+                         else:
+                            price_setp = avg_ch('15m')
+                            limit_price -= price_setp
+                            trigger_price -= price_step
+                            if len(defense_order_list) > 3:
+                                bn.cancel_order(defense_order_list[0])
+                            time.sleep(3)
+        order_check()
+    else:
+        pass
     
     
     
@@ -739,3 +739,4 @@ if __name__ == '__main__':
 #print(bn.fetch_order_status('17748191220',symbol))
 # order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
 # print(order_find['order_id'])
+print(check_positions())

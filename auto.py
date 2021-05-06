@@ -590,6 +590,8 @@ def Autotrading(side):
         defense_order_list = []
         trigger_price = 0
         if side == 'LONG':
+            limit_price = check_positions()[side]['pos_price'] + avg_ch('15m')
+            trigger_price = check_positions()[side]['pos_price']
             while check_positions(side):
                 pos_price = check_positions()[side]['pos_price']
                 if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] - check_positions()[side]['pos_price'] * 0.25 / check_positions()[side]['pos_lev']:
@@ -597,8 +599,6 @@ def Autotrading(side):
                     break
                 else:
                     price_step = avg_ch('15m')
-                    limit_price = pos_price + price_step
-                    trigger_price = pos_price
                     sl_price = pos_price - pos_price * 0.25 / pos_lev
                     if alert_order == None:
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
@@ -607,20 +607,20 @@ def Autotrading(side):
                         if btc_price < limit_price:
                             adj_value = round((trigger_price - pos_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(trigger_price - price_step * 0.382)
-                                tmp_i = 1
-                                while defense_price < sl_price:
-                                    defense_price = int(trigger_price - price_step * 0.382 * tmp_i)
-                                    tmp_i += 0.1                                       
+                                defense_price = int(pos_price - pos_price * 0.2 / pos_lev)                                 
                             else:
                                 defense_price = int(pos_price + avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
+                            if defense_price <= pos_price:
+                                order_type = 'STOP'
+                            else:
+                                order_type = 'TAKE_PROFIT'
                             if trigger_price not in defense_order_dict.keys():
-                                defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
+                                defense_order = create_tpsl_order(order_type, 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
                                 time.sleep(5)
-                                continue
+                                continue                            
                             print(defense_price)
                         else:
                             price_setp = avg_ch('15m')
@@ -648,15 +648,15 @@ def Autotrading(side):
                         if btc_price > limit_price:
                             adj_value = round((pos_price - trigger_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(trigger_price + price_step * 0.618)
-                                tmp_i = 1
-                                while defense_price > sl_price:
-                                    defense_price = int(pos_price + price_step * 0.618 * tmp_i)
-                                    tmp_i -= 0.1                                       
+                                defense_price = int(pos_price / (1 - 0.2 / pos_lev))                                 
                             else:
                                 defense_price = int(pos_price - avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
+                            if defense_price >= pos_price:
+                                order_type = 'STOP'
+                            else:
+                                order_type = 'TAKE_PROFIT'
                             if trigger_price not in defense_order_dict.keys():
-                                defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side) #防守订单
+                                defense_order = create_tpsl_order(order_type, 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
@@ -672,7 +672,11 @@ def Autotrading(side):
                 time.sleep(3)
         order_check()
     else:
+        order_check()
         print('无持仓！')
+    
+def Autocreate():
+    btc_price = bn.fetch_ticker(symbol)['last']
     
     
     

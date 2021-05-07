@@ -281,6 +281,9 @@ def db_insert(data_info):
     col.insert_one(col_dict)
     return
 
+# 订单搜索
+def db_search(type = None, side = None, price = None):
+    order_col.find({})
 
 # 开单
 def make_order(btc_price, amount):
@@ -467,7 +470,7 @@ def create_tpsl_order(type, ratio, price, poside):
             print('订单数量超过范围！')
             return
         else:
-            quantity = round((float(position['positionAmt']) * ratio),3)
+            quantity = abs(round((float(position['positionAmt']) * ratio),3)) #持仓取正
             # 保留三位小数
             if quantity == 0:
                 print('数值太小！')
@@ -628,18 +631,19 @@ def Autotrading(side):
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0])
-                print(trigger_price)
+                print(trigger_price,limit_price,defense_price)
                 time.sleep(3)
         else:
+            print("short mode")
+            limit_price = check_positions()[side]['pos_price'] - avg_ch('15m')
+            trigger_price = check_positions()[side]['pos_price']
             while check_positions(side):
                 pos_price = check_positions()[side]['pos_price']
-                if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] / (1 - 0.25 / check_positions()[side]['pos_lev']):
+                if bn.fetch_ticker(symbol)['last'] > check_positions()[side]['pos_price'] / (1 - 0.25 / check_positions()[side]['pos_lev']):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
                     price_step = avg_ch('15m')
-                    limit_price = pos_price - price_step
-                    trigger_price = pos_price
                     sl_price = pos_price / (1 - 0.25 / pos_lev)
                     if alert_order == None:
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
@@ -677,7 +681,12 @@ def Autotrading(side):
     
 def Autocreate():
     btc_price = bn.fetch_ticker(symbol)['last']
-    
+    try:
+        len(check_positions()) >=1
+    except Exception as e:
+        if e != None:
+            pass
+
     
     
 def loop():
@@ -744,4 +753,14 @@ if __name__ == '__main__':
 #print(bn.fetch_order_status('17748191220',symbol))
 # order_find = order_col.find_one({'order_price': 61000, 'order_positionSide': 'LONG'},{'_id': 0, 'order_id': 1})
 # print(order_find['order_id'])
-Autotrading('LONG')
+# def autotd(side):
+#     if check_positions():
+#         try:
+#             Autotrading(side)
+#         except Exception as e:
+#             if e != None:
+#                 autotd(side)
+
+# autotd('SHORT')
+#Autotrading('SHORT')
+create_tpsl_order('STOP', 1, 57373, 'SHORT')

@@ -283,7 +283,8 @@ def db_insert(data_info):
 
 # 订单搜索
 def db_search(type = None, side = None, price = None):
-    order_col.find({})
+    order_col.find({'order_type': 'STOP'}, {'order_id': 1 '_id': 0})
+    
 
 # 开单
 def make_order(btc_price, amount):

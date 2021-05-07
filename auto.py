@@ -9,13 +9,13 @@
 import ccxt
 import time
 import pymongo
-import schedule
-import pandas as pd
+#import schedule
+# import pandas as pd
 import threading
 import userapi
-from concurrent.futures import ThreadPoolExecutor
+#from concurrent.futures import ThreadPoolExecutor
 from pprint import pprint
-from cyberbrain import trace
+#from cyberbrain import trace
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
@@ -763,4 +763,3 @@ if __name__ == '__main__':
 
 # autotd('SHORT')
 #Autotrading('SHORT')
-create_tpsl_order('STOP', 1, 57373, 'SHORT')

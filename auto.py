@@ -630,7 +630,7 @@ def Autotrading(side):
                                 defense_price = int(pos_price - pos_price * 0.2 / pos_lev)                                 
                             else:
                                 defense_price = int(pos_price + avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
-                            if defense_price <= pos_price:
+                            if defense_price <= pos_price or abs(defense_price - pos_price) < 50:
                                 order_type = 'STOP'
                             else:
                                 order_type = 'TAKE_PROFIT'
@@ -677,11 +677,12 @@ def Autotrading(side):
                                 defense_price = int(pos_price / (1 - 0.2 / pos_lev))                                 
                             else:
                                 defense_price = int(pos_price - avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
-                            if defense_price >= pos_price:
+                            if defense_price >= pos_price or abs(defense_price - pos_price) < 50:
                                 order_type = 'STOP'
                             else:
                                 order_type = 'TAKE_PROFIT'
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
+                                print(defense_price)
                                 defense_order = create_tpsl_order(order_type, 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
@@ -710,7 +711,7 @@ def Autocreate():
     ma3 = ma(3, '1h')
     ma5 = ma(5, '1h')
     if ma3 > ma5:
-        pass
+        side = 'LONG'
     btc_price = bn.fetch_ticker(symbol)['last']
     try:
         len(check_positions()) >=1
@@ -787,4 +788,3 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
-Autotrading('SHORT')

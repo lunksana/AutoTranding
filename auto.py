@@ -15,7 +15,7 @@ import threading
 import userapi
 #from concurrent.futures import ThreadPoolExecutor
 from pprint import pprint
-#from cyberbrain import trace
+from cyberbrain import trace
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
@@ -281,9 +281,15 @@ def db_insert(data_info):
     col.insert_one(col_dict)
     return
 
-# 订单搜索
-def db_search(type = None, side = None, price = None):
-    order_col.find({'order_type': 'STOP'}, {'order_id': 1 '_id': 0})
+# 基于订单价格进行搜索
+def db_search(side, price):
+    order_list = list(order_col.find({'order_status': 'open', 'order_positionSide': side}, {'_id': 0, 'order_price': 1}))
+    for order in order_list:
+        if order['order_price'] == price:
+            return True
+        else:
+          pass
+    return False
     
 
 # 开单
@@ -397,6 +403,15 @@ def fetch_positions(symbol):
                 positions_list.append(i)
     return positions_list
 
+def pos_status(side):
+    bn_symbol = symbol.replace('/','')
+    for pos in bn.fapiPrivateV2GetPositionRisk():
+        if pos != None and pos['symbol'] == bn_symbol and float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
+            return True
+        else:
+            pass
+    return False
+
 # 建立持仓字典，方便查询
 def positions_info(position_list):
     if len(position_list) > 1:
@@ -485,7 +500,8 @@ def create_tpsl_order(type, ratio, price, poside):
     the_order = bn.create_order(symbol, type, side, quantity, price, {
         'stopPrice': stopPrice,
         'positionSide': positionSide,
-        'closePosition': closePosition
+        'closePosition': closePosition,
+        'workingType': 'MARK_PRICE'
     })
     db_insert(the_order)
     order_check()
@@ -586,25 +602,25 @@ def mesh_price(pos_price,side):
 # 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
-    if check_positions(side):
+    if pos_status(side):
         pos_lev = check_positions()[side]['pos_lev']
-        alert_order = None
         defense_order_dict = {}
         limit_price = 0
         defense_order_list = []
         trigger_price = 0
         if side == 'LONG':
-            limit_price = check_positions()[side]['pos_price'] + avg_ch('15m')
-            trigger_price = check_positions()[side]['pos_price']
-            while check_positions(side):
-                pos_price = check_positions()[side]['pos_price']
-                if bn.fetch_ticker(symbol)['last'] < check_positions()[side]['pos_price'] - check_positions()[side]['pos_price'] * 0.25 / check_positions()[side]['pos_lev']:
+            pos_price = check_positions()[side]['pos_price']
+            limit_price = pos_price + avg_ch('15m')
+            trigger_price = pos_price
+            retry = 5
+            while pos_status(side):
+                if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.25 / pos_lev:
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
                     price_step = avg_ch('15m')
-                    sl_price = pos_price - pos_price * 0.25 / pos_lev
-                    if alert_order == None:
+                    sl_price = round(pos_price - pos_price * 0.25 / pos_lev,2)
+                    if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
                     if bn.fetch_ticker(symbol)['last'] > trigger_price:
                         btc_price = bn.fetch_ticker(symbol)['last']
@@ -618,12 +634,12 @@ def Autotrading(side):
                                 order_type = 'STOP'
                             else:
                                 order_type = 'TAKE_PROFIT'
-                            if trigger_price not in defense_order_dict.keys():
+                            if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order(order_type, 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
-                                time.sleep(5)
+                                time.sleep(30)
                                 continue                            
                             print(defense_price)
                         else:
@@ -632,21 +648,26 @@ def Autotrading(side):
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0])
-                print(trigger_price,limit_price,defense_price)
-                time.sleep(3)
+                print(trigger_price,limit_price,bn.fetch_ticker(symbol)['last'])
+                if retry == 0:
+                    time.sleep(30)
+                    retry = 5
+                else:
+                    time.sleep(5)
+                    retry -= 1
         else:
-            print("short mode")
-            limit_price = check_positions()[side]['pos_price'] - avg_ch('15m')
-            trigger_price = check_positions()[side]['pos_price']
-            while check_positions(side):
-                pos_price = check_positions()[side]['pos_price']
-                if bn.fetch_ticker(symbol)['last'] > check_positions()[side]['pos_price'] / (1 - 0.25 / check_positions()[side]['pos_lev']):
+            pos_price = check_positions()[side]['pos_price']
+            limit_price = pos_price - avg_ch('15m')
+            trigger_price = pos_price
+            retry = 5
+            while pos_status(side):
+                if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.25 / pos_lev):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
                     price_step = avg_ch('15m')
-                    sl_price = pos_price / (1 - 0.25 / pos_lev)
-                    if alert_order == None:
+                    sl_price = round(pos_price / (1 - 0.25 / pos_lev),2)
+                    if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
                     if bn.fetch_ticker(symbol)['last'] < trigger_price:
                         btc_price = bn.fetch_ticker(symbol)['last']
@@ -660,12 +681,12 @@ def Autotrading(side):
                                 order_type = 'STOP'
                             else:
                                 order_type = 'TAKE_PROFIT'
-                            if trigger_price not in defense_order_dict.keys():
+                            if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order(order_type, 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
-                                time.sleep(5)
+                                time.sleep(30)
                                 continue
                             print(defense_price)
                         else:
@@ -674,13 +695,22 @@ def Autotrading(side):
                             trigger_price -= price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0])
-                time.sleep(3)
+                if retry == 0:
+                    time.sleep(30)
+                    retry = 5
+                else:
+                    time.sleep(5)
+                    retry -= 1
         order_check()
     else:
         order_check()
         print('无持仓！')
     
 def Autocreate():
+    ma3 = ma(3, '1h')
+    ma5 = ma(5, '1h')
+    if ma3 > ma5:
+        pass
     btc_price = bn.fetch_ticker(symbol)['last']
     try:
         len(check_positions()) >=1
@@ -703,12 +733,6 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    try:
-        bn.cancel_order('39403s')
-    except Exception as e:
-        if e != None:
-            print("error")
-
         
 
     
@@ -763,4 +787,4 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
-#Autotrading('SHORT')
+Autotrading('SHORT')

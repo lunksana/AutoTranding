@@ -17,7 +17,7 @@ import requests
 import json
 #from concurrent.futures import ThreadPoolExecutor
 from pprint import pprint
-from cyberbrain import trace
+#from cyberbrain import trace
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
@@ -612,7 +612,7 @@ def Autotrading(side):
         trigger_price = 0
         if side == 'LONG':
             pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price + avg_ch('15m')
+            limit_price = pos_price + int(avg_ch('1h') * 0.618)
             trigger_price = pos_price
             retry = 5
             while pos_status(side):
@@ -620,18 +620,19 @@ def Autotrading(side):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
-                    price_step = avg_ch('15m')
+                    price_step = int(avg_ch('1h') * 0.618)
                     sl_price = round(pos_price - pos_price * 0.25 / pos_lev,2)
                     if not db_search(side, sl_price):
-                        alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                        alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
+                        defense_order_list.append(alert_order)
                     if bn.fetch_ticker(symbol)['last'] > trigger_price:
                         btc_price = bn.fetch_ticker(symbol)['last']
                         if btc_price < limit_price:
                             adj_value = round((trigger_price - pos_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(pos_price - pos_price * 0.2 / pos_lev)                                 
+                                defense_price = int(pos_price - pos_price * 0.16 / pos_lev)                                 
                             else:
-                                defense_price = int(pos_price + avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
+                                defense_price = int(pos_price + int(avg_ch('5m') * 0.8) * adj_value * (0.5 + 0.2 * adj_value))
                             if defense_price <= pos_price or abs(defense_price - pos_price) < 50:
                                 order_type = 'STOP'
                             else:
@@ -645,11 +646,12 @@ def Autotrading(side):
                                 continue                            
                             print(defense_price)
                         else:
-                            price_setp = avg_ch('15m')
+                            price_setp = int(avg_ch('1h') * 0.618)
                             limit_price += price_setp
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0])
+                                del defense_order_list[0]
                 print(trigger_price,limit_price,bn.fetch_ticker(symbol)['last'])
                 if retry == 0:
                     time.sleep(30)
@@ -659,7 +661,7 @@ def Autotrading(side):
                     retry -= 1
         else:
             pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price - avg_ch('15m')
+            limit_price = pos_price - int(avg_ch('1h') * 0.618)
             trigger_price = pos_price
             retry = 5
             while pos_status(side):
@@ -667,18 +669,19 @@ def Autotrading(side):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
-                    price_step = avg_ch('15m')
+                    price_step = int(avg_ch('1h') * 0.618)
                     sl_price = round(pos_price / (1 - 0.25 / pos_lev),2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                        defense_order_list.append(alert_order)
                     if bn.fetch_ticker(symbol)['last'] < trigger_price:
                         btc_price = bn.fetch_ticker(symbol)['last']
                         if btc_price > limit_price:
                             adj_value = round((pos_price - trigger_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(pos_price / (1 - 0.2 / pos_lev))                                 
+                                defense_price = int(pos_price / (1 - 0.16 / pos_lev))                                 
                             else:
-                                defense_price = int(pos_price - avg_ch('5m') * adj_value * (0.5 + 0.2 * adj_value))
+                                defense_price = int(pos_price - int(avg_ch('5m') * 0.8) * adj_value * (0.5 + 0.2 * adj_value))
                             if defense_price >= pos_price or abs(defense_price - pos_price) < 50:
                                 order_type = 'STOP'
                             else:
@@ -693,11 +696,12 @@ def Autotrading(side):
                                 continue
                             print(defense_price)
                         else:
-                            price_setp = avg_ch('15m')
+                            price_setp = int(avg_ch('1h') * 0.618)
                             limit_price -= price_setp
                             trigger_price -= price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0])
+                                del defense_order_list[0]
                 if retry == 0:
                     time.sleep(30)
                     retry = 5
@@ -708,7 +712,8 @@ def Autotrading(side):
     else:
         order_check()
         print('无持仓！')
-    
+
+# 基于push plus的推送功能    
 def push_message():
     token = userapi.pushtoken #在pushpush网站中可以找到
     title = '当前行情' #改成你要的标题内容
@@ -726,9 +731,17 @@ def push_message():
 
 
 def Autocreate():
+    while ma3 - ma5 > 100:
+        side = 'LONG'
+        if len(list(order_col.find({'order_status': 'open', 'order_type': 'LIMIT', 'order_positionSide': side},{'order_id':1, '_id': 0}))) < 1:
+            btc_price = bn.fetch_ticker(symbol)['last']
+            order_price = btc_price + 30
+            balance = bn.fetch_balance()['free']['USDT']
+            amount = round(balance / 20 / btc_price * 20,3)
+            make_order(order_price,amount)
     ma3 = ma(3, '1h')
     ma5 = ma(5, '1h')
-    if ma3 > ma5:
+    while ma3 > ma5:
         side = 'LONG'
     btc_price = bn.fetch_ticker(symbol)['last']
     try:
@@ -806,4 +819,3 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
-push_message()

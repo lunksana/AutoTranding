@@ -624,7 +624,6 @@ def Autotrading(side):
                     sl_price = round(pos_price - pos_price * 0.25 / pos_lev,2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
-                        defense_order_list.append(alert_order)
                     if bn.fetch_ticker(symbol)['last'] > trigger_price:
                         btc_price = bn.fetch_ticker(symbol)['last']
                         if btc_price < limit_price:
@@ -633,16 +632,12 @@ def Autotrading(side):
                                 defense_price = int(pos_price - pos_price * 0.16 / pos_lev)                                 
                             else:
                                 defense_price = int(pos_price + int(avg_ch('5m') * 0.8) * adj_value * (0.5 + 0.2 * adj_value))
-                            if defense_price <= pos_price or abs(defense_price - pos_price) < 50:
-                                order_type = 'STOP'
-                            else:
-                                order_type = 'TAKE_PROFIT'
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                defense_order = create_tpsl_order(order_type, 1, defense_price, side) #防守订单
+                                defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
-                                time.sleep(30)
+                                time.sleep(15)
                                 continue                            
                             print(defense_price)
                         else:
@@ -673,7 +668,6 @@ def Autotrading(side):
                     sl_price = round(pos_price / (1 - 0.25 / pos_lev),2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
-                        defense_order_list.append(alert_order)
                     if bn.fetch_ticker(symbol)['last'] < trigger_price:
                         btc_price = bn.fetch_ticker(symbol)['last']
                         if btc_price > limit_price:
@@ -682,17 +676,13 @@ def Autotrading(side):
                                 defense_price = int(pos_price / (1 - 0.16 / pos_lev))                                 
                             else:
                                 defense_price = int(pos_price - int(avg_ch('5m') * 0.8) * adj_value * (0.5 + 0.2 * adj_value))
-                            if defense_price >= pos_price or abs(defense_price - pos_price) < 50:
-                                order_type = 'STOP'
-                            else:
-                                order_type = 'TAKE_PROFIT'
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 print(defense_price)
-                                defense_order = create_tpsl_order(order_type, 1, defense_price, side) #防守订单
+                                defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
-                                time.sleep(30)
+                                time.sleep(15)
                                 continue
                             print(defense_price)
                         else:
@@ -708,6 +698,7 @@ def Autotrading(side):
                 else:
                     time.sleep(5)
                     retry -= 1
+        bn.cancel_order(alert_order)
         order_check()
     else:
         order_check()
@@ -819,3 +810,4 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
+create_tpsl_order('STOP', 1, 57500, 'SHORT')

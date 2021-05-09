@@ -612,7 +612,7 @@ def Autotrading(side):
         trigger_price = 0
         if side == 'LONG':
             pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price + int(avg_ch('1h') * 0.618)
+            limit_price = pos_price + int(avg_ch('30m') * 0.618)
             trigger_price = pos_price
             retry = 5
             while pos_status(side):
@@ -620,7 +620,7 @@ def Autotrading(side):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
-                    price_step = int(avg_ch('1h') * 0.618)
+                    price_step = int(avg_ch('30m') * 0.618)
                     sl_price = round(pos_price - pos_price * 0.25 / pos_lev,2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
@@ -646,7 +646,7 @@ def Autotrading(side):
                                 continue                            
                             print(defense_price)
                         else:
-                            price_setp = int(avg_ch('1h') * 0.618)
+                            price_setp = int(avg_ch('30m') * 0.618)
                             limit_price += price_setp
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
@@ -661,7 +661,7 @@ def Autotrading(side):
                     retry -= 1
         else:
             pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price - int(avg_ch('1h') * 0.618)
+            limit_price = pos_price - int(avg_ch('30m') * 0.618)
             trigger_price = pos_price
             retry = 5
             while pos_status(side):
@@ -669,7 +669,7 @@ def Autotrading(side):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
-                    price_step = int(avg_ch('1h') * 0.618)
+                    price_step = int(avg_ch('30m') * 0.618)
                     sl_price = round(pos_price / (1 - 0.25 / pos_lev),2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
@@ -696,7 +696,7 @@ def Autotrading(side):
                                 continue
                             print(defense_price)
                         else:
-                            price_setp = int(avg_ch('1h') * 0.618)
+                            price_setp = int(avg_ch('30m') * 0.618)
                             limit_price -= price_setp
                             trigger_price -= price_step
                             if len(defense_order_list) > 3:

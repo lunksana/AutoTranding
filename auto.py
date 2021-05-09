@@ -13,6 +13,8 @@ import pymongo
 # import pandas as pd
 import threading
 import userapi
+import requests
+import json
 #from concurrent.futures import ThreadPoolExecutor
 from pprint import pprint
 from cyberbrain import trace
@@ -707,6 +709,22 @@ def Autotrading(side):
         order_check()
         print('无持仓！')
     
+def push_message():
+    token = userapi.pushtoken #在pushpush网站中可以找到
+    title = '当前行情' #改成你要的标题内容
+    content = "# BTC \n **当前价格:**  " + str(bn.fetch_ticker(symbol)['last']) + "\n" #改成你要的正文内容
+    url = 'http://www.pushplus.plus/send'
+    data = {
+        "token":token,
+        "title":title,
+        "content":content,
+        "template":"markdown"
+    }
+    body=json.dumps(data).encode(encoding='utf-8')
+    headers = {'Content-Type':'application/json'}
+    requests.post(url,data=body,headers=headers)
+
+
 def Autocreate():
     ma3 = ma(3, '1h')
     ma5 = ma(5, '1h')
@@ -788,3 +806,4 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
+push_message()

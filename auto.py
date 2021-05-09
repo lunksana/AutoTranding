@@ -700,6 +700,8 @@ def Autotrading(side):
                     retry -= 1
         try:
             bn.cancel_order(alert_order)
+            for i in defense_order_list[0,len(defense_order_list)]:
+                bn.cancel_order(i)
         except Exception as e:
             pass
         order_check()
@@ -727,6 +729,8 @@ def push_message():
 def Autocreate():
     while ma(3,'1h') - ma(5,'1h') > 100:
         side = 'LONG'
+        if len(bn.fetch_open_orders(symbol)) < 1:
+            btc_price = bn.fetch_ticker(symbol)['last']
         if len(list(order_col.find({'order_status': 'open', 'order_type': 'LIMIT', 'order_positionSide': side},{'order_id':1, '_id': 0}))) < 1:
             btc_price = bn.fetch_ticker(symbol)['last']
             order_price = btc_price + 30

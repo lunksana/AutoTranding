@@ -725,7 +725,7 @@ def push_message():
 
 
 def Autocreate():
-    while ma3 - ma5 > 100:
+    while ma(3,'1h') - ma(5,'1h') > 100:
         side = 'LONG'
         if len(list(order_col.find({'order_status': 'open', 'order_type': 'LIMIT', 'order_positionSide': side},{'order_id':1, '_id': 0}))) < 1:
             btc_price = bn.fetch_ticker(symbol)['last']

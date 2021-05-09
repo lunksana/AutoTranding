@@ -813,4 +813,3 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
-create_tpsl_order('STOP', 1, 57500, 'SHORT')

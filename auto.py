@@ -21,6 +21,8 @@ from pprint import pprint
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
+positions_split = 20
+leverage = 20
 dbclient = pymongo.MongoClient(userapi.dbaddr,userapi.dbport)
 db = dbclient['bn']
 price_db = dbclient['price']
@@ -600,6 +602,22 @@ def mesh_price(pos_price,side):
         mesh_price = pos_price - price_step
     return mesh_price
 
+# 基于push plus的推送功能    
+def push_message():
+    token = userapi.pushtoken #在pushpush网站中可以找到
+    title = '当前行情' #改成你要的标题内容
+    content = "# BTC \n **当前价格:**  " + str(bn.fetch_ticker(symbol)['last']) + "\n" #改成你要的正文内容
+    url = 'http://www.pushplus.plus/send'
+    data = {
+        "token":token,
+        "title":title,
+        "content":content,
+        "template":"markdown"
+    }
+    body=json.dumps(data).encode(encoding='utf-8')
+    headers = {'Content-Type':'application/json'}
+    requests.post(url,data=body,headers=headers)
+
 # 追踪价格，按照阶梯方式进行订单生成和取消
 # 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
 # 一个新的止损点，并最终建立合适的止盈单
@@ -700,53 +718,60 @@ def Autotrading(side):
                     retry -= 1
         try:
             bn.cancel_order(alert_order)
-            for i in defense_order_list[0,len(defense_order_list)]:
-                bn.cancel_order(i)
-        except Exception as e:
-            pass
+        finally:
+            for order_id in defense_order_list:
+                try:
+                    bn.cancel_order(order_id)
+                except:
+                    pass
         order_check()
     else:
         order_check()
         print('无持仓！')
 
-# 基于push plus的推送功能    
-def push_message():
-    token = userapi.pushtoken #在pushpush网站中可以找到
-    title = '当前行情' #改成你要的标题内容
-    content = "# BTC \n **当前价格:**  " + str(bn.fetch_ticker(symbol)['last']) + "\n" #改成你要的正文内容
-    url = 'http://www.pushplus.plus/send'
-    data = {
-        "token":token,
-        "title":title,
-        "content":content,
-        "template":"markdown"
-    }
-    body=json.dumps(data).encode(encoding='utf-8')
-    headers = {'Content-Type':'application/json'}
-    requests.post(url,data=body,headers=headers)
-
-
 def Autocreate():
     while ma(3,'1h') - ma(5,'1h') > 100:
-        side = 'LONG'
-        if len(bn.fetch_open_orders(symbol)) < 1:
-            btc_price = bn.fetch_ticker(symbol)['last']
-        if len(list(order_col.find({'order_status': 'open', 'order_type': 'LIMIT', 'order_positionSide': side},{'order_id':1, '_id': 0}))) < 1:
-            btc_price = bn.fetch_ticker(symbol)['last']
-            order_price = btc_price + 30
-            balance = bn.fetch_balance()['free']['USDT']
-            amount = round(balance / 20 / btc_price * 20,3)
-            make_order(order_price,amount)
-    ma3 = ma(3, '1h')
-    ma5 = ma(5, '1h')
-    while ma3 > ma5:
-        side = 'LONG'
-    btc_price = bn.fetch_ticker(symbol)['last']
-    try:
-        len(check_positions()) >=1
-    except Exception as e:
-        if e != None:
+        time.sleep(60)
+        if ma(3,'1h') - ma(5,'1h') > 100:
+            side = 'LONG'
+            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders[0]['positionSide'] != side:
+                btc_price = bn.fetch_ticker(symbol)['last']
+                order_price = int(btc_price + avg_ch('5m') * 0.382)
+                balance = bn.fetch_free_balance()['USDT']
+                amount = round(balance / positions_split / btc_price * leverage, 3)
+                new_order = make_order(order_price, amount)
+                time.sleep(60)
+                if bn.fetch_order_status(new_order, symbol) == 'open':
+                    break
+                else:
+                    continue
+            else:
+                break
+        else:
             pass
+    while ma(5,'1h') - ma(3,'1h') > 100:
+        time.sleep(60)
+        if ma(5,'1h') - ma(5,'1h') > 100:
+            side = 'SHORT'
+            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders[0]['positionSide'] != side:
+                btc_price = bn.fetch_ticker(symbol)['last']
+                order_price = int(btc_price - avg_ch('5m') * 0.382)
+                balance = bn.fetch_free_balance()['USDT']
+                amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
+                new_order = make_order(order_price, amount)
+                time.sleep(60)
+                if bn.fetch_order_status(new_order, symbol) == 'open':
+                    break
+                else:
+                    continue
+            else:
+                break
+        else:
+            pass
+    order_price()
+        
+                
+
 
     
     

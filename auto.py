@@ -768,7 +768,7 @@ def Autocreate():
                 break
         else:
             pass
-    order_price()
+    order_check()
         
                 
 
@@ -777,6 +777,7 @@ def Autocreate():
     
 def loop():
     print(threading.current_thread().name)
+    threading.Thread
     btc_price = bn.fetch_ticker(symbol)['last']
     while btc_price < 55500:
         print(btc_price)

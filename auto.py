@@ -553,7 +553,7 @@ def cancel_my_order(price, side, type):
     #     return
     else:
         order_id = order_col.find_one({'order_price': price, 'order_positionSide': side.upper(), 'order_type': type.upper()},{'_id': 0, 'order_id': 1})['order_id']
-        bn.cancel_order(order_id)
+        bn.cancel_order(order_id,symbol)
         order_check()
     return
         
@@ -663,7 +663,7 @@ def Autotrading(side):
                             limit_price += price_setp
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
-                                bn.cancel_order(defense_order_list[0])
+                                bn.cancel_order(defense_order_list[0],symbol)
                                 del defense_order_list[0]
                 print(trigger_price,limit_price,bn.fetch_ticker(symbol)['last'])
                 if retry == 0:
@@ -708,7 +708,7 @@ def Autotrading(side):
                             limit_price -= price_setp
                             trigger_price -= price_step
                             if len(defense_order_list) > 3:
-                                bn.cancel_order(defense_order_list[0])
+                                bn.cancel_order(defense_order_list[0],symbol)
                                 del defense_order_list[0]
                 if retry == 0:
                     time.sleep(30)
@@ -717,11 +717,11 @@ def Autotrading(side):
                     time.sleep(5)
                     retry -= 1
         try:
-            bn.cancel_order(alert_order)
+            bn.cancel_order(alert_order,symbol)
         finally:
             for order_id in defense_order_list:
                 try:
-                    bn.cancel_order(order_id)
+                    bn.cancel_order(order_id,symbol)
                 except:
                     pass
         order_check()

@@ -63,7 +63,7 @@ def avg_ch(time):
 
 pprint(bn.fetch_balance()['free'])
 #pprint(bn.fetch_open_orders('BTC/USDT'))
-pprint(bn.fetch_ticker('BTC/USDT')['last'])
+#pprint(bn.fetch_ticker('BTC/USDT')['last'])
 #pprint(bn.fetch_orders('BTC/USDT')[-3])
 
 
@@ -87,7 +87,7 @@ pprint(bn.fetch_ticker('BTC/USDT')['last'])
 #         order_price = btc_price - 50
 #         bn.create_order('BTC/USDT','limit','buy',0.005,order_price,{'positionSide': 'SHORT'})
     
-print(int(avg_ch('1h') * 0.618))
+#print(int(avg_ch('1h') * 0.618))
 
 #pprint(bn.fetch_closed_orders(symbol))
 # 判断已成交挂单和成交订单之间的关系
@@ -296,23 +296,6 @@ def db_search(side, price):
     return False
     
 
-# 开单
-def make_order(btc_price, amount):
-    if amount > 0:
-        new_order = bn.create_limit_buy_order(symbol, amount, btc_price, {'positionSide': 'LONG'})
-    else:
-        amount = abs(amount)
-        new_order = bn.create_limit_sell_order(symbol, amount, btc_price, {'positionSide': 'SHORT'})
-    db_insert(new_order)
-    order_id = new_order['id']
-    return order_id
-
-        
-    
-        
-                        
-
-
 # 判断挂单是否成交
 '''
 也可以通过closed订单判断，成交的订单自动会进入closed订单中，fetch_closed_orders 'id' == fetch_my_traders 'order'
@@ -369,6 +352,18 @@ def order_check(order_id = None):
         print('输入错误！')
         order_check()
         return
+
+
+# 开单
+def make_order(btc_price, amount):
+    if amount > 0:
+        new_order = bn.create_limit_buy_order(symbol, amount, btc_price, {'positionSide': 'LONG'})
+    else:
+        amount = abs(amount)
+        new_order = bn.create_limit_sell_order(symbol, amount, btc_price, {'positionSide': 'SHORT'})
+    db_insert(new_order)
+    order_id = new_order['id']
+    return order_id
         
     
 
@@ -603,7 +598,8 @@ def mesh_price(pos_price,side):
     return mesh_price
 
 # 基于push plus的推送功能    
-def push_message():
+def push_message(push_type):
+    push_type_list = ['error', 'info', 'order', 'funds']
     token = userapi.pushtoken #在pushpush网站中可以找到
     title = '当前行情' #改成你要的标题内容
     content = "# BTC \n **当前价格:**  " + str(bn.fetch_ticker(symbol)['last']) + "\n" #改成你要的正文内容
@@ -737,7 +733,7 @@ def Autocreate():
             if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders[0]['positionSide'] != side:
                 btc_price = bn.fetch_ticker(symbol)['last']
                 order_price = int(btc_price + avg_ch('5m') * 0.382)
-                balance = bn.fetch_free_balance()['USDT']
+                balance = bn.fetch_total_balance()['USDT']
                 amount = round(balance / positions_split / btc_price * leverage, 3)
                 new_order = make_order(order_price, amount)
                 time.sleep(60)
@@ -756,7 +752,7 @@ def Autocreate():
             if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders[0]['positionSide'] != side:
                 btc_price = bn.fetch_ticker(symbol)['last']
                 order_price = int(btc_price - avg_ch('5m') * 0.382)
-                balance = bn.fetch_free_balance()['USDT']
+                balance = bn.fetch_total_balance()['USDT']
                 amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
                 new_order = make_order(order_price, amount)
                 time.sleep(60)
@@ -775,12 +771,9 @@ def Autocreate():
 
     
     
-def loop():
+def th_create(function, args):
     print(threading.current_thread().name)
-    threading.Thread
-    btc_price = bn.fetch_ticker(symbol)['last']
-    while btc_price < 55500:
-        print(btc_price)
+    threading.Thread(target=function,arges = args)
         
     
 

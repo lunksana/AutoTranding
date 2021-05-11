@@ -695,7 +695,6 @@ def Autotrading(side):
                             else:
                                 defense_price = int(pos_price - int(avg_ch('5m') * 0.618) * adj_value * (0.5 + 0.2 * adj_value))
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                print(defense_price)
                                 defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
@@ -710,6 +709,7 @@ def Autotrading(side):
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0],symbol)
                                 del defense_order_list[0]
+                print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                 if retry == 0:
                     time.sleep(30)
                     retry = 5

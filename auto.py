@@ -771,9 +771,19 @@ def Autocreate():
 
     
     
-def th_create(function, args):
-    print(threading.current_thread().name)
-    threading.Thread(target=function,arges = args)
+def main():
+    while True:
+        th_create_order = threading.Thread(target = Autocreate)
+        try:
+            pos_status('LONG')
+        except:
+            try:
+                pos_status('SHORT')
+            except:
+                continue
+        th_positions = threading.Thread(target = Autotrading, args = (side,))
+        th_create_order.join()
+
         
     
 

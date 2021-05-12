@@ -619,6 +619,7 @@ def push_message(push_type):
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
     if pos_status(side):
+        print('函数启动时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         pos_lev = check_positions()[side]['pos_lev']
         defense_order_dict = {}
         limit_price = 0
@@ -659,11 +660,12 @@ def Autotrading(side):
                             limit_price += price_setp
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
-                                bn.cancel_order(defense_order_list[0],symbol)
+                                bn.cancel_order(defense_order_list[0], symbol)
                                 del defense_order_list[0]
                 print(trigger_price,limit_price,bn.fetch_ticker(symbol)['last'])
                 if retry == 0:
-                    time.sleep(30)
+                    time.sleep(15)
+                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                     retry = 5
                 else:
                     time.sleep(5)
@@ -703,21 +705,22 @@ def Autotrading(side):
                             limit_price -= price_setp
                             trigger_price -= price_step
                             if len(defense_order_list) > 3:
-                                bn.cancel_order(defense_order_list[0],symbol)
+                                bn.cancel_order(defense_order_list[0], symbol)
                                 del defense_order_list[0]
                 print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                 if retry == 0:
-                    time.sleep(30)
+                    time.sleep(15)
+                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                     retry = 5
                 else:
                     time.sleep(5)
                     retry -= 1
         try:
-            bn.cancel_order(alert_order,symbol)
+            bn.cancel_order(alert_order, symbol)
         finally:
             for order_id in defense_order_list:
                 try:
-                    bn.cancel_order(order_id,symbol)
+                    bn.cancel_order(order_id, symbol)
                 except:
                     pass
         order_check()
@@ -766,23 +769,24 @@ def Autocreate():
             pass
     order_check()
         
-                
+def loop(function, side = None):
+    functions = ['Autocreate', 'Autotrading', 'push_message']
+    if function not in functions:
+        print('函数错误！')
+        return
+    else:
+        if side != None and function == 'Autotrading':
+            th = threading.Thread(target = function, args = (side,))
+        else:
+            th = threading.Thread(function)
+    return th 
 
 
     
     
 def main():
     while True:
-        th_create_order = threading.Thread(target = Autocreate)
-        try:
-            pos_status('LONG')
-        except:
-            try:
-                pos_status('SHORT')
-            except:
-                continue
-        th_positions = threading.Thread(target = Autotrading, args = (side,))
-        th_create_order.join()
+        loop('Autocreate')
 
         
     

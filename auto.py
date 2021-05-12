@@ -724,6 +724,7 @@ def Autotrading(side):
                 except:
                     pass
         order_check()
+        print('函数运行结束时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     else:
         order_check()
         print('无持仓！')
@@ -747,7 +748,7 @@ def Autocreate():
             else:
                 break
         else:
-            pass
+            continue
     while ma(5,'1h') - ma(3,'1h') > 100:
         time.sleep(60)
         if ma(5,'1h') - ma(5,'1h') > 100:
@@ -766,7 +767,7 @@ def Autocreate():
             else:
                 break
         else:
-            pass
+            continue
     order_check()
         
 def loop(function, side = None):

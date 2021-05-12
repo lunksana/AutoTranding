@@ -15,7 +15,7 @@ import threading
 import userapi
 import requests
 import json
-#from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pprint import pprint
 #from cyberbrain import trace
 
@@ -717,6 +717,8 @@ def Autotrading(side):
                     retry -= 1
         try:
             bn.cancel_order(alert_order, symbol)
+        except:
+            pass
         finally:
             for order_id in defense_order_list:
                 try:
@@ -770,14 +772,14 @@ def Autocreate():
             continue
     order_check()
         
-def loop(function, side = None):
+def loop(function, fun_args = None):
     functions = ['Autocreate', 'Autotrading', 'push_message']
     if function not in functions:
         print('函数错误！')
         return
     else:
-        if side != None and function == 'Autotrading':
-            th = threading.Thread(target = function, args = (side,))
+        if fun_args != None and function == 'Autotrading':
+            th = threading.Thread(target = function, args = (fun_args,))
         else:
             th = threading.Thread(function)
     return th 

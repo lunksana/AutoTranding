@@ -776,6 +776,7 @@ def Autocreate():
 def Autoorders():
     print('函数启动时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     if ma(3, '15m') - ma(5, '15m') > 0:
+        print(ma(3, '15m') - ma(5, '15m'))
         time.sleep(60)
         while ma(5, '15m') - ma(3, '15m') > 0:
             time.sleep(150)
@@ -799,6 +800,7 @@ def Autoorders():
         print('函数重试时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         Autoorders()                
     else:
+        print(ma(5, '15m') - ma(3, '15m'))
         time.sleep(60)
         while ma(3, '15m') - ma(5, '15m') > 0:
             time.sleep(150)

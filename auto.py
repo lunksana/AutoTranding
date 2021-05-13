@@ -369,12 +369,12 @@ def make_order(btc_price, amount):
 
 
 # MA计算
-def ma(long,time):
-    ohlcv = bn.fetchOHLCV(symbol,time)
+def ma(long, time):
+    ohlcv = bn.fetchOHLCV(symbol, time)
     ohlcvsum = 0
-    for i in range(0-long,0):
+    for i in range(0 - long, 0):
         ohlcvsum += ohlcv[i][4]
-    return ohlcvsum/long
+    return ohlcvsum / long
 
 # 获取当前持仓
 '''
@@ -730,13 +730,14 @@ def Autotrading(side):
     else:
         order_check()
         print('无持仓！')
+            
 
 def Autocreate():
     while ma(3,'1h') - ma(5,'1h') > 100:
         time.sleep(60)
         if ma(3,'1h') - ma(5,'1h') > 100:
             side = 'LONG'
-            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders[0]['positionSide'] != side:
+            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
                 btc_price = bn.fetch_ticker(symbol)['last']
                 order_price = int(btc_price + avg_ch('5m') * 0.382)
                 balance = bn.fetch_total_balance()['USDT']
@@ -755,7 +756,7 @@ def Autocreate():
         time.sleep(60)
         if ma(5,'1h') - ma(3,'1h') > 100:
             side = 'SHORT'
-            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders[0]['positionSide'] != side:
+            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
                 btc_price = bn.fetch_ticker(symbol)['last']
                 order_price = int(btc_price - avg_ch('5m') * 0.382)
                 balance = bn.fetch_total_balance()['USDT']
@@ -771,6 +772,56 @@ def Autocreate():
         else:
             continue
     order_check()
+    
+def Autoorders():
+    print('函数启动时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    if ma(3, '15m') - ma(5, '15m') > 0:
+        time.sleep(60)
+        while ma(5, '15m') - ma(3, '15m') > 0:
+            time.sleep(150)
+            if ma(5, '15m') - ma(3, '15m') > 0:
+                side = 'SHORT'
+                if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
+                    btc_price = bn.fetch_ticker(symbol)['last']
+                    order_price = int(btc_price - avg_ch('5m') * 0.382)
+                    balance = bn.fetch_total_balance()['USDT']
+                    amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
+                    new_order = make_order(order_price, amount)
+                    print(new_order)
+                    time.sleep(60)
+                if bn.fetch_order_status(new_order, symbol) == 'closed':
+                    return
+                else:
+                    bn.cancel_order(new_order, symbol)
+                    continue
+            else:
+                continue
+        print('函数重试时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        Autoorders()                
+    else:
+        time.sleep(60)
+        while ma(3, '15m') - ma(5, '15m') > 0:
+            time.sleep(150)
+            if ma(3, '15m') - ma(5, '15m') > 0:
+                side = 'LONG'
+                if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
+                    btc_price = bn.fetch_ticker(symbol)['last']
+                    order_price = int(btc_price + avg_ch('5m') * 0.382)
+                    balance = bn.fetch_total_balance()['USDT']
+                    amount = round(balance / positions_split / btc_price * leverage, 3)
+                    new_order = make_order(order_price, amount)
+                    print(new_order)
+                    time.sleep(60)
+                if bn.fetch_order_status(new_order, symbol) == 'closed':
+                    break
+                else:
+                    bn.cancel_order(new_order, symbol)
+                    continue
+            else:
+                continue
+        print('函数重试时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        Autoorders()
+            
         
 def loop(function, fun_args = None):
     functions = ['Autocreate', 'Autotrading', 'push_message']
@@ -853,4 +904,4 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
-Autocreate()
+Autoorders()

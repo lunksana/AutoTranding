@@ -21,7 +21,7 @@ from pprint import pprint
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-positions_split = 20
+positions_split = 80
 leverage = 20
 dbclient = pymongo.MongoClient(userapi.dbaddr,userapi.dbport)
 db = dbclient['bn']
@@ -627,7 +627,7 @@ def Autotrading(side):
         trigger_price = 0
         if side == 'LONG':
             pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price + int(avg_ch('15m') * 0.8)
+            limit_price = pos_price + int(avg_ch('15m') * 0.736)
             trigger_price = pos_price
             retry = 5
             while pos_status(side):
@@ -635,7 +635,7 @@ def Autotrading(side):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
-                    price_step = int(avg_ch('15m') * 0.8)
+                    price_step = int(avg_ch('15m') * 0.736)
                     sl_price = round(pos_price - pos_price * 0.25 / pos_lev,2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
@@ -656,7 +656,7 @@ def Autotrading(side):
                                 continue                            
                             print(defense_price)
                         else:
-                            price_setp = int(avg_ch('15m') * 0.8)
+                            price_setp = int(avg_ch('15m') * 0.736)
                             limit_price += price_setp
                             trigger_price += price_step
                             if len(defense_order_list) > 3:
@@ -672,7 +672,7 @@ def Autotrading(side):
                     retry -= 1
         else:
             pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price - int(avg_ch('15m') * 0.8)
+            limit_price = pos_price - int(avg_ch('15m') * 0.736)
             trigger_price = pos_price
             retry = 5
             while pos_status(side):
@@ -680,7 +680,7 @@ def Autotrading(side):
                     create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                     break
                 else:
-                    price_step = int(avg_ch('15m') * 0.8)
+                    price_step = int(avg_ch('15m') * 0.736)
                     sl_price = round(pos_price / (1 - 0.25 / pos_lev),2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
@@ -701,7 +701,7 @@ def Autotrading(side):
                                 continue
                             print(defense_price)
                         else:
-                            price_setp = int(avg_ch('15m') * 0.8)
+                            price_setp = int(avg_ch('15m') * 0.736)
                             limit_price -= price_setp
                             trigger_price -= price_step
                             if len(defense_order_list) > 3:
@@ -787,15 +787,15 @@ def Autoorders():
                     order_price = int(btc_price - avg_ch('5m') * 0.382)
                     balance = bn.fetch_total_balance()['USDT']
                     amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
-                    new_order = make_order(order_price, amount)
-                    print(new_order)
+                    auto_order = make_order(order_price, amount)
+                    print(auto_order)
                     time.sleep(60)
-                if bn.fetch_order_status(new_order, symbol) == 'closed':
+                if bn.fetch_order_status(auto_order, symbol) == 'closed':
                     threading.Thread(target = Autotrading, args = (side,)).start()
                     threading.Thread(target = Autoorders).start()
                     return
                 else:
-                    bn.cancel_order(new_order, symbol)
+                    bn.cancel_order(auto_order, symbol)
                     continue
             else:
                 continue
@@ -813,15 +813,15 @@ def Autoorders():
                     order_price = int(btc_price + avg_ch('5m') * 0.382)
                     balance = bn.fetch_total_balance()['USDT']
                     amount = round(balance / positions_split / btc_price * leverage, 3)
-                    new_order = make_order(order_price, amount)
-                    print(new_order)
+                    auto_order = make_order(order_price, amount)
+                    print(auto_order)
                     time.sleep(60)
-                if bn.fetch_order_status(new_order, symbol) == 'closed':
+                if bn.fetch_order_status(auto_order, symbol) == 'closed':
                     threading.Thread(target = Autotrading, args = (side,)).start()
                     threading.Thread(target = Autoorders).start()
                     break
                 else:
-                    bn.cancel_order(new_order, symbol)
+                    bn.cancel_order(auto_order, symbol)
                     continue
             else:
                 continue

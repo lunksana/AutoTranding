@@ -15,7 +15,7 @@ import threading
 import userapi
 import requests
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed  
 from pprint import pprint
 #from cyberbrain import trace
 
@@ -753,7 +753,7 @@ def Autocreate():
             continue
     while ma(5,'1h') - ma(3,'1h') > 100:
         time.sleep(60)
-        if ma(5,'1h') - ma(5,'1h') > 100:
+        if ma(5,'1h') - ma(3,'1h') > 100:
             side = 'SHORT'
             if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders[0]['positionSide'] != side:
                 btc_price = bn.fetch_ticker(symbol)['last']
@@ -853,3 +853,4 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
+Autocreate()

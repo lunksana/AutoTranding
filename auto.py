@@ -853,6 +853,10 @@ def loop(function, fun_args = None):
     
     
 def main():
+    order_check()
+    if bn.fetch_free_balance(symbol)['USDT'] <= 200:
+        print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        return
     while True:
         th_order = threading.Thread(target = Autoorders)
         th_position = threading.Thread(target = Autotrading, args = (side,))

@@ -599,17 +599,21 @@ def mesh_price(pos_price,side):
 
 # 基于push plus的推送功能    
 def push_message(push_type):
-    push_type_list = ['error', 'info', 'order', 'funds']
-    token = userapi.pushtoken #在pushpush网站中可以找到
-    title = '当前行情' #改成你要的标题内容
-    content = "# BTC \n **当前价格:**  " + str(bn.fetch_ticker(symbol)['last']) + "\n" #改成你要的正文内容
+    token = userapi.pushtoken
     url = 'http://www.pushplus.plus/send'
-    data = {
-        "token":token,
-        "title":title,
-        "content":content,
-        "template":"markdown"
-    }
+    push_type_list = ['error', 'info', 'order', 'funds']
+    if push_type not in push_type_list:
+        print('推送模式错误！')
+        return
+    elif push_type == 'error':
+        title = '运行错误！'
+        content = "# BTC \n **当前价格:**  " + str(bn.fetch_ticker(symbol)['last']) + "\n" #改成你要的正文内容
+        data = {
+            "token":token,
+            "title":title,
+            "content":content,
+            "template":"markdown"
+        }   
     body=json.dumps(data).encode(encoding='utf-8')
     headers = {'Content-Type':'application/json'}
     requests.post(url,data=body,headers=headers)
@@ -644,9 +648,11 @@ def Autotrading(side):
                         if btc_price < limit_price:
                             adj_value = round((trigger_price - pos_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(pos_price - pos_price * 0.16 / pos_lev)                                 
+                                defense_price = int(pos_price - pos_price * 0.125 / pos_lev)                                 
                             else:
                                 defense_price = int(pos_price + int(avg_ch('5m') * 0.618) * adj_value * (0.5 + 0.2 * adj_value))
+                                if abs(defense_price - pos_price) < 1:
+                                    defense_price = int(pos_price + pos_price * 0.01 / pos_lev)
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
@@ -689,9 +695,11 @@ def Autotrading(side):
                         if btc_price > limit_price:
                             adj_value = round((pos_price - trigger_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(pos_price / (1 - 0.16 / pos_lev))                                 
+                                defense_price = int(pos_price / (1 - 0.125 / pos_lev))                                 
                             else:
                                 defense_price = int(pos_price - int(avg_ch('5m') * 0.618) * adj_value * (0.5 + 0.2 * adj_value))
+                                if abs(defense_price - pos_price) < 1:
+                                    defense_price = int(pos_price / (1 + 0.01 / pos_lev))
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
@@ -846,7 +854,11 @@ def loop(function, fun_args = None):
     
 def main():
     while True:
-        loop('Autocreate')
+        th_order = threading.Thread(target = Autoorders)
+        th_position = threading.Thread(target = Autotrading, args = (side,))
+        th_push = threading.Thread(target = push_message, args = (push_type,))
+
+
 
         
     

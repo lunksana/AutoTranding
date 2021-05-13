@@ -21,7 +21,7 @@ from pprint import pprint
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-positions_split = 80
+positions_split = 40
 leverage = 20
 dbclient = pymongo.MongoClient(userapi.dbaddr,userapi.dbport)
 db = dbclient['bn']

@@ -782,7 +782,7 @@ def Autoorders():
             time.sleep(150)
             if ma(5, '15m') - ma(3, '15m') > 0:
                 side = 'SHORT'
-                if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
+                if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     btc_price = bn.fetch_ticker(symbol)['last']
                     order_price = int(btc_price - avg_ch('5m') * 0.382)
                     balance = bn.fetch_total_balance()['USDT']
@@ -806,7 +806,7 @@ def Autoorders():
             time.sleep(150)
             if ma(3, '15m') - ma(5, '15m') > 0:
                 side = 'LONG'
-                if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
+                if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     btc_price = bn.fetch_ticker(symbol)['last']
                     order_price = int(btc_price + avg_ch('5m') * 0.382)
                     balance = bn.fetch_total_balance()['USDT']

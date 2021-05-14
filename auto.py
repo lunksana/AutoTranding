@@ -652,7 +652,7 @@ def Autotrading(side):
                             else:
                                 defense_price = int(pos_price + int(avg_ch('5m') * 0.618) * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
-                                    defense_price = int(pos_price + pos_price * 0.035 / pos_lev)
+                                    defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
@@ -699,7 +699,7 @@ def Autotrading(side):
                             else:
                                 defense_price = int(pos_price - int(avg_ch('5m') * 0.618) * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
-                                    defense_price = int(pos_price / (1 + 0.035 / pos_lev))
+                                    defense_price = int(pos_price / (1 + 0.03 / pos_lev))
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)

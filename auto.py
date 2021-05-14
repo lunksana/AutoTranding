@@ -21,7 +21,7 @@ from pprint import pprint
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-positions_split = 40
+positions_split = 50
 leverage = 20
 dbclient = pymongo.MongoClient(userapi.dbaddr,userapi.dbport)
 db = dbclient['bn']
@@ -652,7 +652,7 @@ def Autotrading(side):
                             else:
                                 defense_price = int(pos_price + int(avg_ch('5m') * 0.618) * adj_value * (0.5 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
-                                    defense_price = int(pos_price + pos_price * 0.01 / pos_lev)
+                                    defense_price = int(pos_price + pos_price * 0.025 / pos_lev)
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)
@@ -699,7 +699,7 @@ def Autotrading(side):
                             else:
                                 defense_price = int(pos_price - int(avg_ch('5m') * 0.618) * adj_value * (0.5 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
-                                    defense_price = int(pos_price / (1 + 0.01 / pos_lev))
+                                    defense_price = int(pos_price / (1 + 0.025 / pos_lev))
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                 defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                 defense_order_list.append(defense_order)

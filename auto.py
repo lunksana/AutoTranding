@@ -787,7 +787,7 @@ def Autoorders():
         if ma(3, '15m') - ma(5, '15m') > 0:
             print(ma(3, '15m') - ma(5, '15m'))
             time.sleep(60)
-            while ma(5, '15m') - ma(3, '15m') > 0:
+            while ma(3, '15m') - ma(5, '15m') > 0:
                 time.sleep(150)
                 if ma(5, '15m') - ma(3, '15m') > 50:
                     side = 'SHORT'
@@ -801,6 +801,7 @@ def Autoorders():
                         print(auto_order)
                         time.sleep(60)
                     if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        print('订单ID：', auto_order)
                         threading.Thread(target = Autotrading, args = (side,)).start()
                         break
                     else:
@@ -812,7 +813,7 @@ def Autoorders():
         else:
             print(ma(5, '15m') - ma(3, '15m'))
             time.sleep(60)
-            while ma(3, '15m') - ma(5, '15m') > 0:
+            while ma(5, '15m') - ma(3, '15m') > 0:
                 time.sleep(150)
                 if ma(3, '15m') - ma(5, '15m') > 50:
                     side = 'LONG'
@@ -826,6 +827,7 @@ def Autoorders():
                         print(auto_order)
                         time.sleep(60)
                     if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        print('订单ID：', auto_order)
                         threading.Thread(target = Autotrading, args = (side,)).start()
                         break
                     else:

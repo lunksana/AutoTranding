@@ -801,6 +801,7 @@ def Autoorders():
                         print(auto_order)
                         time.sleep(60)
                     if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        threading.Thread(target = Autotrading, args = (side,)).start()
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)
@@ -825,6 +826,7 @@ def Autoorders():
                         print(auto_order)
                         time.sleep(60)
                     if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        threading.Thread(target = Autotrading, args = (side,)).start()
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)

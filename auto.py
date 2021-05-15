@@ -788,8 +788,8 @@ def Autoorders():
             print('MA3 - MA5:', ma(3, '15m') - ma(5, '15m'))
             time.sleep(60)
             while ma(3, '15m') - ma(5, '15m') > 0:
-                time.sleep(150)
-                if ma(5, '15m') - ma(3, '15m') > 50:
+                time.sleep(900)
+                if ma(5, '15m') - ma(3, '15m') > 40:
                     side = 'SHORT'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):
@@ -814,8 +814,8 @@ def Autoorders():
             print('MA5 - MA3:', ma(5, '15m') - ma(3, '15m'))
             time.sleep(60)
             while ma(5, '15m') - ma(3, '15m') > 0:
-                time.sleep(150)
-                if ma(3, '15m') - ma(5, '15m') > 50:
+                time.sleep(900)
+                if ma(3, '15m') - ma(5, '15m') > 40:
                     side = 'LONG'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):

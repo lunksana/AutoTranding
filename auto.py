@@ -788,7 +788,7 @@ def Autoorders():
         time.sleep(60)
         while ma(5, '15m') - ma(3, '15m') > 0:
             time.sleep(150)
-            if ma(5, '15m') - ma(3, '15m') > 0:
+            if ma(5, '15m') - ma(3, '15m') > 50:
                 side = 'SHORT'
                 if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     btc_price = bn.fetch_ticker(symbol)['last']
@@ -799,8 +799,6 @@ def Autoorders():
                     print(auto_order)
                     time.sleep(60)
                 if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                    threading.Thread(target = Autotrading, args = (side,)).start()
-                    threading.Thread(target = Autoorders).start()
                     return
                 else:
                     bn.cancel_order(auto_order, symbol)
@@ -814,7 +812,7 @@ def Autoorders():
         time.sleep(60)
         while ma(3, '15m') - ma(5, '15m') > 0:
             time.sleep(150)
-            if ma(3, '15m') - ma(5, '15m') > 0:
+            if ma(3, '15m') - ma(5, '15m') > 50:
                 side = 'LONG'
                 if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     btc_price = bn.fetch_ticker(symbol)['last']
@@ -825,8 +823,6 @@ def Autoorders():
                     print(auto_order)
                     time.sleep(60)
                 if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                    threading.Thread(target = Autotrading, args = (side,)).start()
-                    threading.Thread(target = Autoorders).start()
                     break
                 else:
                     bn.cancel_order(auto_order, symbol)

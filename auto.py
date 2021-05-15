@@ -783,54 +783,55 @@ def Autocreate():
     
 def Autoorders():
     print('函数启动时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-    if ma(3, '15m') - ma(5, '15m') > 0:
-        print(ma(3, '15m') - ma(5, '15m'))
-        time.sleep(60)
-        while ma(5, '15m') - ma(3, '15m') > 0:
-            time.sleep(150)
-            if ma(5, '15m') - ma(3, '15m') > 50:
-                side = 'SHORT'
-                if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
-                    btc_price = bn.fetch_ticker(symbol)['last']
-                    order_price = int(btc_price - avg_ch('5m') * 0.382)
-                    balance = bn.fetch_total_balance()['USDT']
-                    amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
-                    auto_order = make_order(order_price, amount)
-                    print(auto_order)
-                    time.sleep(60)
-                if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                    return
+    while True:
+        if ma(3, '15m') - ma(5, '15m') > 0:
+            print(ma(3, '15m') - ma(5, '15m'))
+            time.sleep(60)
+            while ma(5, '15m') - ma(3, '15m') > 0:
+                time.sleep(150)
+                if ma(5, '15m') - ma(3, '15m') > 50:
+                    side = 'SHORT'
+                    # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
+                    if not pos_status(side):
+                        btc_price = bn.fetch_ticker(symbol)['last']
+                        order_price = int(btc_price - avg_ch('5m') * 0.382)
+                        balance = bn.fetch_total_balance()['USDT']
+                        amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
+                        auto_order = make_order(order_price, amount)
+                        print(auto_order)
+                        time.sleep(60)
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        break
+                    else:
+                        bn.cancel_order(auto_order, symbol)
+                        continue
                 else:
-                    bn.cancel_order(auto_order, symbol)
                     continue
-            else:
-                continue
-        print('函数重试时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        Autoorders()                
-    else:
-        print(ma(5, '15m') - ma(3, '15m'))
-        time.sleep(60)
-        while ma(3, '15m') - ma(5, '15m') > 0:
-            time.sleep(150)
-            if ma(3, '15m') - ma(5, '15m') > 50:
-                side = 'LONG'
-                if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
-                    btc_price = bn.fetch_ticker(symbol)['last']
-                    order_price = int(btc_price + avg_ch('5m') * 0.382)
-                    balance = bn.fetch_total_balance()['USDT']
-                    amount = round(balance / positions_split / btc_price * leverage, 3)
-                    auto_order = make_order(order_price, amount)
-                    print(auto_order)
-                    time.sleep(60)
-                if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                    break
+            print('SHORT模式终止时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
+        else:
+            print(ma(5, '15m') - ma(3, '15m'))
+            time.sleep(60)
+            while ma(3, '15m') - ma(5, '15m') > 0:
+                time.sleep(150)
+                if ma(3, '15m') - ma(5, '15m') > 50:
+                    side = 'LONG'
+                    # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
+                    if not pos_status(side):
+                        btc_price = bn.fetch_ticker(symbol)['last']
+                        order_price = int(btc_price + avg_ch('5m') * 0.382)
+                        balance = bn.fetch_total_balance()['USDT']
+                        amount = round(balance / positions_split / btc_price * leverage, 3)
+                        auto_order = make_order(order_price, amount)
+                        print(auto_order)
+                        time.sleep(60)
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        break
+                    else:
+                        bn.cancel_order(auto_order, symbol)
+                        continue
                 else:
-                    bn.cancel_order(auto_order, symbol)
                     continue
-            else:
-                continue
-        print('函数重试时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        Autoorders()
+            print('LONG模式终止时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             
         
 def loop(function, fun_args = None):
@@ -855,6 +856,10 @@ def main():
         return
     while True:
         th_order = threading.Thread(target = Autoorders)
+        th_order.start()
+        th_order.join()
+        if th_order.is_alive():
+            pass
         th_position = threading.Thread(target = Autotrading, args = (side,))
         th_push = threading.Thread(target = push_message, args = (push_type,))
 

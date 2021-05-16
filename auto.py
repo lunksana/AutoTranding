@@ -15,6 +15,7 @@ import threading
 import userapi
 import requests
 import json
+import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed  
 from pprint import pprint
 #from cyberbrain import trace
@@ -789,7 +790,7 @@ def Autoorders():
             time.sleep(60)
             while ma(3, '30m') - ma(5, '30m') > 0:
                 time.sleep(900)
-                if ma(5, '30m') - ma(3, '30m') > 50:
+                if ma(5, '30m') - ma(3, '30m') > 90:
                     side = 'SHORT'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):
@@ -817,7 +818,7 @@ def Autoorders():
             time.sleep(60)
             while ma(5, '30m') - ma(3, '30m') > 0:
                 time.sleep(900)
-                if ma(3, '30m') - ma(5, '30m') > 50:
+                if ma(3, '30m') - ma(5, '30m') > 90:
                     side = 'LONG'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):

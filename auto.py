@@ -16,6 +16,7 @@ import userapi
 import requests
 import json
 import multiprocessing
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed  
 from pprint import pprint
 #from cyberbrain import trace
@@ -801,8 +802,10 @@ def Autoorders():
                         auto_order = make_order(order_price, amount)
                         time.sleep(60)
                 elif ma(3, '30m') - ma(5, '30m') > 90:
+                    ma_ch = ma(3, '30m') - ma(5, '30m')
+                    ma3 = ma(3, '30m')
                     time.sleep(300)
-                    if ma(3, '30m') - ma(5, '30m') > 180:
+                    if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '30m') > ma3:
                         side = 'LONG'
                         if not pos_status(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
@@ -841,8 +844,10 @@ def Autoorders():
                         auto_order = make_order(order_price, amount)
                         time.sleep(60)
                 elif ma(5, '30m') - ma(3, '30m') > 90:
+                    ma_ch = ma(5, '30m') - ma(3, '30m')
+                    ma5 = ma(5, '30m')
                     time.sleep(300)
-                    if ma(5, '30m') - ma(3, '30m') > 180:
+                    if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '30m') < ma5:
                         side = 'SHORT'
                         if not pos_status(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
@@ -911,7 +916,7 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    main()
+    Autoorders()
         
 
     

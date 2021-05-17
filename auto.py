@@ -431,7 +431,7 @@ def price_now():
     while True:
         btc_price = bn.fetch_ticker(symbol)['last']
         db_insert(btc_price)
-        time.sleep(3)
+        time.sleep(5)
 
 
 # 建立止损止盈单
@@ -624,7 +624,7 @@ def push_message(push_type):
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
     if pos_status(side):
-        print('函数启动时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         pos_lev = check_positions()[side]['pos_lev']
         defense_order_dict = {}
         limit_price = 0
@@ -735,7 +735,7 @@ def Autotrading(side):
                 except:
                     pass
         order_check()
-        print('函数运行结束时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     else:
         order_check()
         print('无持仓！')
@@ -783,7 +783,7 @@ def Autocreate():
     order_check()
     
 def Autoorders():
-    print('函数启动时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     while True:
         if ma(3, '30m') - ma(5, '30m') > 0:
             print('MA3 - MA5:', ma(3, '30m') - ma(5, '30m'))
@@ -799,20 +799,32 @@ def Autoorders():
                         balance = bn.fetch_total_balance()['USDT']
                         amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
                         auto_order = make_order(order_price, amount)
-                        print(auto_order)
                         time.sleep(60)
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                        print('订单ID：', auto_order)
-                        th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        th_pos.start()
-                        th_pos.join()
-                        break
+                elif ma(3, '30m') - ma(5, '30m') > 90:
+                    time.sleep(300)
+                    if ma(3, '30m') - ma(5, '30m') > 180:
+                        side = 'LONG'
+                        if not pos_status(side):
+                            btc_price = bn.fetch_ticker(symbol)['last']
+                            order_price = int(btc_price + avg_ch('5m') * 0.382)
+                            balance = bn.fetch_total_balance()['USDT']
+                            amount = round(balance / positions_split / btc_price * leverage, 3)
+                            auto_order = make_order(order_price, amount)
+                            time.sleep(60)        
                     else:
-                        bn.cancel_order(auto_order, symbol)
                         continue
                 else:
                     continue
-            print('SHORT模式终止时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
+                if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                    print('订单ID：', auto_order)
+                    th_pos = threading.Thread(target = Autotrading, args = (side,))
+                    th_pos.start()
+                    th_pos.join()
+                    break
+                else:
+                    bn.cancel_order(auto_order, symbol)
+                    continue
+            print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
         else:
             print('MA5 - MA3:', ma(5, '30m') - ma(3, '30m'))
             time.sleep(60)
@@ -827,20 +839,32 @@ def Autoorders():
                         balance = bn.fetch_total_balance()['USDT']
                         amount = round(balance / positions_split / btc_price * leverage, 3)
                         auto_order = make_order(order_price, amount)
-                        print(auto_order)
                         time.sleep(60)
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                        print('订单ID：', auto_order)
-                        th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        th_pos.start()
-                        th_pos.join()
-                        break
+                elif ma(5, '30m') - ma(3, '30m') > 90:
+                    time.sleep(300)
+                    if ma(5, '30m') - ma(3, '30m') > 180:
+                        side = 'SHORT'
+                        if not pos_status(side):
+                            btc_price = bn.fetch_ticker(symbol)['last']
+                            order_price = int(btc_price - avg_ch('5m') * 0.382)
+                            balance = bn.fetch_total_balance()['USDT']
+                            amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
+                            auto_order = make_order(order_price, amount)
+                            time.sleep(60)
                     else:
-                        bn.cancel_order(auto_order, symbol)
-                        continue
+                        continue   
                 else:
                     continue
-            print('LONG模式终止时间：',time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                    print('订单ID：', auto_order)
+                    th_pos = threading.Thread(target = Autotrading, args = (side,))
+                    th_pos.start()
+                    th_pos.join()
+                    break
+                else:
+                    bn.cancel_order(auto_order, symbol)
+                    continue
+            print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             
         
 def loop(function, fun_args = None):
@@ -860,17 +884,22 @@ def loop(function, fun_args = None):
     
 def main():
     order_check()
-    if bn.fetch_free_balance(symbol)['USDT'] <= 200:
-        print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        return
+    th_order = threading.Thread(target = Autoorders)
+    th_price = threading.Thread(target = price_now)
     while True:
-        th_order = threading.Thread(target = Autoorders)
-        th_order.start()
-        th_order.join()
-        if th_order.is_alive():
-            pass
-        th_position = threading.Thread(target = Autotrading, args = (side,))
-        th_push = threading.Thread(target = push_message, args = (push_type,))
+        if bn.fetch_free_balance(symbol)['USDT'] <= 200:
+            print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            return
+        if not th_order.is_alive():
+            try:
+                th_order.start()
+                th_price.start()
+                th_order.join()
+                th_price.join()
+            except:
+                time.sleep(60)
+                continue
+        
 
 
 
@@ -882,6 +911,7 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
+    main()
         
 
     
@@ -936,4 +966,3 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
-Autoorders()

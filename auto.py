@@ -24,7 +24,8 @@ from pprint import pprint
 symbol = 'BTC/USDT'
 positions_split = 50
 leverage = 20
-dbclient = pymongo.MongoClient(userapi.dbaddr,userapi.dbport)
+# 多进程模式下需要加上connect = false
+dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)
 db = dbclient['bn']
 price_db = dbclient['price']
 # 挂单
@@ -938,3 +939,7 @@ if __name__ == '__main__':
 #                 autotd(side)
 
 # autotd('SHORT')
+# pprint(bn.fapiPrivate_get_order({
+#     'orderId': '20206699237',
+#     'symbol': 'BTCUSDT'
+#     }))

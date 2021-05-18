@@ -741,7 +741,7 @@ def Autotrading(side):
         print('无持仓！')
 
 # 自动进行开单
-def auto_order(side):
+def auto_create(side):
     if side == 'SHORT':
         btc_price = bn.fetch_ticker(symbol)['last']
         order_price = int(btc_price - avg_ch('5m') * 0.382)
@@ -769,7 +769,7 @@ def Autoorders():
                     side = 'SHORT'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):
-                        auto_order = auto_order(side)
+                        auto_order = auto_create(side)
                         time.sleep(60)
                 elif ma(3, '30m') - ma(5, '30m') > 90:
                     ma_ch = ma(3, '30m') - ma(5, '30m')
@@ -778,7 +778,7 @@ def Autoorders():
                     if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '30m') > ma3:
                         side = 'LONG'
                         if not pos_status(side):
-                            auto_order = auto_order(side)
+                            auto_order = auto_create(side)
                             time.sleep(60)        
                     else:
                         continue
@@ -807,7 +807,7 @@ def Autoorders():
                     side = 'LONG'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):
-                        auto_order = auto_order(side)
+                        auto_order = auto_create(side)
                         time.sleep(60)
                 elif ma(5, '30m') - ma(3, '30m') > 90:
                     ma_ch = ma(5, '30m') - ma(3, '30m')
@@ -816,7 +816,7 @@ def Autoorders():
                     if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '30m') < ma5:
                         side = 'SHORT'
                         if not pos_status(side):
-                            auto_order = auto_order(side)
+                            auto_order = auto_create(side)
                             time.sleep(60)
                     else:
                         continue   

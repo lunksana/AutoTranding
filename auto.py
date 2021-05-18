@@ -6,6 +6,7 @@
 # 5.定时任务参照 https://lz5z.com/Python%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F/
 
 
+from typing import get_args
 import ccxt
 import time
 import pymongo
@@ -15,9 +16,9 @@ import threading
 import userapi
 import requests
 import json
-import multiprocessing
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed  
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Process 
 from pprint import pprint
 #from cyberbrain import trace
 
@@ -787,9 +788,12 @@ def Autoorders():
                     continue
                 if bn.fetch_order_status(auto_order, symbol) == 'closed':
                     print('订单ID：', auto_order)
-                    th_pos = threading.Thread(target = Autotrading, args = (side,))
-                    th_pos.start()
-                    th_pos.join()
+                    # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                    # th_pos.start()
+                    # th_pos.join()
+                    pr_pos = Process(target = Autotrading, args = (side,))
+                    pr_pos.start()
+                    pr_pos.join()
                     break
                 else:
                     bn.cancel_order(auto_order, symbol)
@@ -822,9 +826,12 @@ def Autoorders():
                     continue
                 if bn.fetch_order_status(auto_order, symbol) == 'closed':
                     print('订单ID：', auto_order)
-                    th_pos = threading.Thread(target = Autotrading, args = (side,))
-                    th_pos.start()
-                    th_pos.join()
+                    # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                    # th_pos.start()
+                    # th_pos.join()
+                    pr_pos = Process(target = Autotrading, args = (side,))
+                    pr_pos.start()
+                    pr_pos.join()
                     break
                 else:
                     bn.cancel_order(auto_order, symbol)

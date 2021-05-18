@@ -761,6 +761,7 @@ def Autoorders():
     while True:
         if ma(3, '30m') - ma(5, '30m') > 0:
             print('MA3 - MA5:', ma(3, '30m') - ma(5, '30m'))
+            side = 'LONG'
             time.sleep(60)
             while ma(3, '30m') - ma(5, '30m') > 0:
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
@@ -799,6 +800,7 @@ def Autoorders():
             print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
         else:
             print('MA5 - MA3:', ma(5, '30m') - ma(3, '30m'))
+            side = 'SHORT'
             time.sleep(60)
             while ma(5, '30m') - ma(3, '30m') > 0:
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]

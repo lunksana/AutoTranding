@@ -652,7 +652,7 @@ def Autotrading(side):
                             if trigger_price == pos_price:
                                 defense_price = int(pos_price - pos_price * 0.125 / pos_lev)                                 
                             else:
-                                defense_price = int(pos_price + int(avg_ch('5m') * 0.618) * adj_value * (0.6 + 0.2 * adj_value))
+                                defense_price = int(pos_price + int(avg_ch('5m') * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
                                     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
@@ -660,9 +660,9 @@ def Autotrading(side):
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
-                                time.sleep(10)
+                                time.sleep(8)
                                 continue                            
-                            print(defense_price)
+                            print(defense_price, defense_order_list)
                         else:
                             price_setp = int(avg_ch('15m') * 0.5)
                             limit_price += price_setp
@@ -699,7 +699,7 @@ def Autotrading(side):
                             if trigger_price == pos_price:
                                 defense_price = int(pos_price / (1 - 0.125 / pos_lev))                                 
                             else:
-                                defense_price = int(pos_price - int(avg_ch('5m') * 0.618) * adj_value * (0.6 + 0.2 * adj_value))
+                                defense_price = int(pos_price - int(avg_ch('5m') * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
                                     defense_price = int(pos_price / (1 + 0.03 / pos_lev))
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
@@ -707,9 +707,9 @@ def Autotrading(side):
                                 defense_order_list.append(defense_order)
                                 defense_order_dict[trigger_price] = defense_order
                             else:
-                                time.sleep(10)
+                                time.sleep(8)
                                 continue
-                            print(defense_price)
+                            print(defense_price, defense_order_list)
                         else:
                             price_setp = int(avg_ch('15m') * 0.5)
                             limit_price -= price_setp
@@ -740,48 +740,22 @@ def Autotrading(side):
     else:
         order_check()
         print('无持仓！')
-            
 
-def Autocreate():
-    while ma(3,'1h') - ma(5,'1h') > 100:
-        time.sleep(60)
-        if ma(3,'1h') - ma(5,'1h') > 100:
-            side = 'LONG'
-            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
-                btc_price = bn.fetch_ticker(symbol)['last']
-                order_price = int(btc_price + avg_ch('5m') * 0.382)
-                balance = bn.fetch_total_balance()['USDT']
-                amount = round(balance / positions_split / btc_price * leverage, 3)
-                new_order = make_order(order_price, amount)
-                time.sleep(60)
-                if bn.fetch_order_status(new_order, symbol) == 'open':
-                    break
-                else:
-                    continue
-            else:
-                break
-        else:
-            continue
-    while ma(5,'1h') - ma(3,'1h') > 100:
-        time.sleep(60)
-        if ma(5,'1h') - ma(3,'1h') > 100:
-            side = 'SHORT'
-            if len(bn.fetch_open_orders(symbol)) < 2 and bn.fetch_open_orders(symbol)[0]['positionSide'] != side:
-                btc_price = bn.fetch_ticker(symbol)['last']
-                order_price = int(btc_price - avg_ch('5m') * 0.382)
-                balance = bn.fetch_total_balance()['USDT']
-                amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
-                new_order = make_order(order_price, amount)
-                time.sleep(60)
-                if bn.fetch_order_status(new_order, symbol) == 'open':
-                    break
-                else:
-                    continue
-            else:
-                break
-        else:
-            continue
-    order_check()
+# 自动进行开单
+def auto_order(side):
+    if side == 'SHORT':
+        btc_price = bn.fetch_ticker(symbol)['last']
+        order_price = int(btc_price - avg_ch('5m') * 0.382)
+        balance = bn.fetch_total_balance()['USDT']
+        amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
+        auto_order = make_order(order_price, amount)
+    else:
+        btc_price = bn.fetch_ticker(symbol)['last']
+        order_price = int(btc_price + avg_ch('5m') * 0.382)
+        balance = bn.fetch_total_balance()['USDT']
+        amount = round(balance / positions_split / btc_price * leverage, 3)
+        auto_order = make_order(order_price, amount)
+    return auto_order
     
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -790,16 +764,13 @@ def Autoorders():
             print('MA3 - MA5:', ma(3, '30m') - ma(5, '30m'))
             time.sleep(60)
             while ma(3, '30m') - ma(5, '30m') > 0:
+                close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                 time.sleep(600)
-                if ma(5, '30m') - ma(3, '30m') > 90:
+                if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
                     side = 'SHORT'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):
-                        btc_price = bn.fetch_ticker(symbol)['last']
-                        order_price = int(btc_price - avg_ch('5m') * 0.382)
-                        balance = bn.fetch_total_balance()['USDT']
-                        amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
-                        auto_order = make_order(order_price, amount)
+                        auto_order = auto_order(side)
                         time.sleep(60)
                 elif ma(3, '30m') - ma(5, '30m') > 90:
                     ma_ch = ma(3, '30m') - ma(5, '30m')
@@ -808,11 +779,7 @@ def Autoorders():
                     if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '30m') > ma3:
                         side = 'LONG'
                         if not pos_status(side):
-                            btc_price = bn.fetch_ticker(symbol)['last']
-                            order_price = int(btc_price + avg_ch('5m') * 0.382)
-                            balance = bn.fetch_total_balance()['USDT']
-                            amount = round(balance / positions_split / btc_price * leverage, 3)
-                            auto_order = make_order(order_price, amount)
+                            auto_order = auto_order(side)
                             time.sleep(60)        
                     else:
                         continue
@@ -832,16 +799,13 @@ def Autoorders():
             print('MA5 - MA3:', ma(5, '30m') - ma(3, '30m'))
             time.sleep(60)
             while ma(5, '30m') - ma(3, '30m') > 0:
+                close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                 time.sleep(600)
-                if ma(3, '30m') - ma(5, '30m') > 90:
+                if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
                     side = 'LONG'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                     if not pos_status(side):
-                        btc_price = bn.fetch_ticker(symbol)['last']
-                        order_price = int(btc_price + avg_ch('5m') * 0.382)
-                        balance = bn.fetch_total_balance()['USDT']
-                        amount = round(balance / positions_split / btc_price * leverage, 3)
-                        auto_order = make_order(order_price, amount)
+                        auto_order = auto_order(side)
                         time.sleep(60)
                 elif ma(5, '30m') - ma(3, '30m') > 90:
                     ma_ch = ma(5, '30m') - ma(3, '30m')
@@ -850,11 +814,7 @@ def Autoorders():
                     if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '30m') < ma5:
                         side = 'SHORT'
                         if not pos_status(side):
-                            btc_price = bn.fetch_ticker(symbol)['last']
-                            order_price = int(btc_price - avg_ch('5m') * 0.382)
-                            balance = bn.fetch_total_balance()['USDT']
-                            amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
-                            auto_order = make_order(order_price, amount)
+                            auto_order = auto_order(side)
                             time.sleep(60)
                     else:
                         continue   

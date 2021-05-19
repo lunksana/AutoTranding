@@ -30,7 +30,7 @@ leverage = 20
 # db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
 # price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price
 def db_link(name):
-    db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport)[name]
+    db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)[name]
     return db
 db = db_link('bn')
 price_db = db_link('price')
@@ -670,9 +670,12 @@ def Autotrading(side):
                                 continue                            
                             print(defense_price, defense_order_list)
                         else:
-                            price_setp = int(avg_ch('15m') * 0.5)
-                            limit_price += price_setp
-                            trigger_price += price_step
+                            price_step = int(avg_ch('15m') * 0.5)
+                            if btc_price - limit_price > price_step:
+                                limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
+                            else:
+                                limit_price += price_step
+                            trigger_price = limit_price - price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0], symbol)
                                 del defense_order_list[0]
@@ -717,9 +720,12 @@ def Autotrading(side):
                                 continue
                             print(defense_price, defense_order_list)
                         else:
-                            price_setp = int(avg_ch('15m') * 0.5)
-                            limit_price -= price_setp
-                            trigger_price -= price_step
+                            price_step = int(avg_ch('15m') * 0.5)
+                            if limit_price - btc_price > price_step:
+                                limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
+                            else:
+                                limit_price -= price_step
+                            trigger_price = limit_price + price_step
                             if len(defense_order_list) > 3:
                                 bn.cancel_order(defense_order_list[0], symbol)
                                 del defense_order_list[0]

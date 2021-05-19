@@ -27,14 +27,19 @@ leverage = 20
 # 多进程模式下对接数据库的方式需要类似与如下类型
 # dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)
 # db = dbclient['bn']
-db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
-price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price
+# db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
+# price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price
+def db_link(name):
+    db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport)[name]
+    return db
+db = db_link('bn')
+price_db = db_link('price')
 # 挂单
-order_col = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn.orders
+order_col = db_link('bn').orders
 # 已成交订单
-trade_col = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn.trades
+trade_col = db_link('bn').trades
 # 资金情况
-funds_col = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn.funds
+funds_col = db_link('bn').funds
 
 bn = ccxt.binance({
     'enableRateLimit': True,
@@ -44,7 +49,7 @@ bn = ccxt.binance({
     },
     'apiKey': userapi.apiKey,
     'secret': userapi.secret
-}) 
+})
 
 # 价格涨幅波动
 #@trace
@@ -770,7 +775,7 @@ def Autoorders():
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                 ma_ch = ma(3, '30m') - ma(5, '30m')
                 ma3 = ma(3, '30m')
-                time.sleep(300)
+                time.sleep(930)
                 if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
                     side = 'SHORT'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
@@ -808,7 +813,7 @@ def Autoorders():
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                 ma_ch = ma(5, '30m') - ma(3, '30m')
                 ma5 = ma(5, '30m')
-                time.sleep(300)
+                time.sleep(930)
                 if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
                     side = 'LONG'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:

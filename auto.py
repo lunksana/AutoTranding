@@ -24,10 +24,11 @@ from pprint import pprint
 symbol = 'BTC/USDT'
 positions_split = 50
 leverage = 20
-# 多进程模式下需要加上connect = false
-dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)
-db = dbclient['bn']
-price_db = dbclient['price']
+# 多进程模式下对接数据库的方式需要类似与如下类型
+# dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)
+# db = dbclient['bn']
+db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
+price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price
 # 挂单
 order_col = db['orders']
 # 已成交订单
@@ -766,7 +767,7 @@ def Autoorders():
             time.sleep(60)
             while ma(3, '30m') - ma(5, '30m') > 0:
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-                time.sleep(600)
+                time.sleep(300)
                 if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
                     side = 'SHORT'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
@@ -805,7 +806,7 @@ def Autoorders():
             time.sleep(60)
             while ma(5, '30m') - ma(3, '30m') > 0:
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-                time.sleep(600)
+                time.sleep(300)
                 if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
                     side = 'LONG'
                     # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:

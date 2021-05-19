@@ -30,11 +30,11 @@ leverage = 20
 db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
 price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price
 # 挂单
-order_col = db.orders
+order_col = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn.orders
 # 已成交订单
-trade_col = db.trades
+trade_col = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn.trades
 # 资金情况
-funds_col = db.funds
+funds_col = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn.funds
 
 bn = ccxt.binance({
     'enableRateLimit': True,
@@ -757,6 +757,7 @@ def auto_create(side):
         amount = round(balance / positions_split / btc_price * leverage, 3)
         auto_order = make_order(order_price, amount)
     return auto_order
+
     
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -767,6 +768,8 @@ def Autoorders():
             time.sleep(60)
             while ma(3, '30m') - ma(5, '30m') > 0:
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+                ma_ch = ma(3, '30m') - ma(5, '30m')
+                ma3 = ma(3, '30m')
                 time.sleep(300)
                 if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
                     side = 'SHORT'
@@ -775,9 +778,6 @@ def Autoorders():
                         auto_order = auto_create(side)
                         time.sleep(60)
                 elif ma(3, '30m') - ma(5, '30m') > 90:
-                    ma_ch = ma(3, '30m') - ma(5, '30m')
-                    ma3 = ma(3, '30m')
-                    time.sleep(300)
                     if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '30m') > ma3:
                         side = 'LONG'
                         if not pos_status(side):
@@ -806,6 +806,8 @@ def Autoorders():
             time.sleep(60)
             while ma(5, '30m') - ma(3, '30m') > 0:
                 close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+                ma_ch = ma(5, '30m') - ma(3, '30m')
+                ma5 = ma(5, '30m')
                 time.sleep(300)
                 if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
                     side = 'LONG'
@@ -814,9 +816,6 @@ def Autoorders():
                         auto_order = auto_create(side)
                         time.sleep(60)
                 elif ma(5, '30m') - ma(3, '30m') > 90:
-                    ma_ch = ma(5, '30m') - ma(3, '30m')
-                    ma5 = ma(5, '30m')
-                    time.sleep(300)
                     if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '30m') < ma5:
                         side = 'SHORT'
                         if not pos_status(side):

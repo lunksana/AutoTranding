@@ -773,7 +773,7 @@ def auto_create(side):
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     while True:
-        if bn.fetch_free_balance(symbol)['USDT'] <= 270:
+        if bn.fetch_free_balance()['USDT'] <= 270:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             break
         else:
@@ -851,7 +851,7 @@ def Autoorders():
                         bn.cancel_order(auto_order, symbol)
                         continue
                 print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-    print('程序退出！当前余额：{}'.format(bn.fetch_free_balance(symbol)['USDT']))
+    print('程序退出！当前余额：{}'.format(bn.fetch_free_balance()['USDT']))
     return
             
         

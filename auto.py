@@ -809,6 +809,7 @@ def Autoorders():
                         # th_pos.join()
                         pr_pos = Process(target = Autotrading, args = (side,))
                         pr_pos.start()
+                        pr_pos.join()
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)
@@ -846,6 +847,7 @@ def Autoorders():
                         # th_pos.join()
                         pr_pos = Process(target = Autotrading, args = (side,))
                         pr_pos.start()
+                        pr_pos.join()
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)

@@ -30,11 +30,11 @@ leverage = 20
 db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
 price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price
 # 挂单
-order_col = db['orders']
+order_col = db.orders
 # 已成交订单
-trade_col = db['trades']
+trade_col = db.trades
 # 资金情况
-funds_col = db['funds']
+funds_col = db.funds
 
 bn = ccxt.binance({
     'enableRateLimit': True,

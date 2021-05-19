@@ -773,82 +773,86 @@ def auto_create(side):
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     while True:
-        if ma(3, '30m') - ma(5, '30m') > 0:
-            print('MA3 - MA5:', ma(3, '30m') - ma(5, '30m'))
-            side = 'LONG'
-            time.sleep(60)
-            while ma(3, '30m') - ma(5, '30m') > 0:
-                close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-                ma_ch = ma(3, '30m') - ma(5, '30m')
-                ma3 = ma(3, '30m')
-                time.sleep(930)
-                if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
-                    side = 'SHORT'
-                    # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
-                    if not pos_status(side):
-                        auto_order = auto_create(side)
-                        time.sleep(60)
-                elif ma(3, '30m') - ma(5, '30m') > 90:
-                    if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '30m') > ma3:
-                        side = 'LONG'
-                        if not pos_status(side):
-                            auto_order = auto_create(side)
-                            time.sleep(60)        
-                    else:
-                        continue
-                else:
-                    continue
-                if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                    print('订单ID：', auto_order)
-                    # th_pos = threading.Thread(target = Autotrading, args = (side,))
-                    # th_pos.start()
-                    # th_pos.join()
-                    pr_pos = Process(target = Autotrading, args = (side,))
-                    pr_pos.start()
-                    pr_pos.join()
-                    break
-                else:
-                    bn.cancel_order(auto_order, symbol)
-                    continue
-            print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
+        if bn.fetch_free_balance(symbol)['USDT'] <= 270:
+            print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            break
         else:
-            print('MA5 - MA3:', ma(5, '30m') - ma(3, '30m'))
-            side = 'SHORT'
-            time.sleep(60)
-            while ma(5, '30m') - ma(3, '30m') > 0:
-                close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-                ma_ch = ma(5, '30m') - ma(3, '30m')
-                ma5 = ma(5, '30m')
-                time.sleep(930)
-                if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
-                    side = 'LONG'
-                    # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
-                    if not pos_status(side):
-                        auto_order = auto_create(side)
-                        time.sleep(60)
-                elif ma(5, '30m') - ma(3, '30m') > 90:
-                    if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '30m') < ma5:
+            if ma(3, '30m') - ma(5, '30m') > 0:
+                print('MA3 - MA5:', ma(3, '30m') - ma(5, '30m'))
+                side = 'LONG'
+                time.sleep(60)
+                while ma(3, '30m') - ma(5, '30m') > 0:
+                    close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+                    ma_ch = ma(3, '30m') - ma(5, '30m')
+                    ma3 = ma(3, '30m')
+                    time.sleep(930)
+                    if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
                         side = 'SHORT'
+                        # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
                         if not pos_status(side):
                             auto_order = auto_create(side)
                             time.sleep(60)
+                    elif ma(3, '30m') - ma(5, '30m') > 90:
+                        if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '30m') > ma3:
+                            side = 'LONG'
+                            if not pos_status(side):
+                                auto_order = auto_create(side)
+                                time.sleep(60)        
+                        else:
+                            continue
                     else:
-                        continue   
-                else:
-                    continue
-                if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                    print('订单ID：', auto_order)
-                    # th_pos = threading.Thread(target = Autotrading, args = (side,))
-                    # th_pos.start()
-                    # th_pos.join()
-                    pr_pos = Process(target = Autotrading, args = (side,))
-                    pr_pos.start()
-                    pr_pos.join()
-                    break
-                else:
-                    bn.cancel_order(auto_order, symbol)
-                    continue
-            print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                        continue
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        print('订单ID：', auto_order)
+                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                        # th_pos.start()
+                        # th_pos.join()
+                        pr_pos = Process(target = Autotrading, args = (side,))
+                        pr_pos.start()
+                        break
+                    else:
+                        bn.cancel_order(auto_order, symbol)
+                        continue
+                print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
+            else:
+                print('MA5 - MA3:', ma(5, '30m') - ma(3, '30m'))
+                side = 'SHORT'
+                time.sleep(60)
+                while ma(5, '30m') - ma(3, '30m') > 0:
+                    close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+                    ma_ch = ma(5, '30m') - ma(3, '30m')
+                    ma5 = ma(5, '30m')
+                    time.sleep(930)
+                    if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
+                        side = 'LONG'
+                        # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
+                        if not pos_status(side):
+                            auto_order = auto_create(side)
+                            time.sleep(60)
+                    elif ma(5, '30m') - ma(3, '30m') > 90:
+                        if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '30m') < ma5:
+                            side = 'SHORT'
+                            if not pos_status(side):
+                                auto_order = auto_create(side)
+                                time.sleep(60)
+                        else:
+                            continue   
+                    else:
+                        continue
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                        print('订单ID：', auto_order)
+                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                        # th_pos.start()
+                        # th_pos.join()
+                        pr_pos = Process(target = Autotrading, args = (side,))
+                        pr_pos.start()
+                        break
+                    else:
+                        bn.cancel_order(auto_order, symbol)
+                        continue
+                print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    print('程序退出！当前余额：{}'.format(bn.fetch_free_balance(symbol)['USDT']))
+    return
             
         
 def loop(function, fun_args = None):

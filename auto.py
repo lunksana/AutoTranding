@@ -382,7 +382,7 @@ def make_order(btc_price, amount):
 
 # MA计算
 def ma(long, time):
-    ohlcv = bn.fetchOHLCV(symbol, time)
+    ohlcv = bn.fetchOHLCV(symbol, time, limit = long + 2)
     ohlcvsum = 0
     for i in range(0 - long, 0):
         ohlcvsum += ohlcv[i][4]
@@ -821,7 +821,7 @@ def Autoorders():
                         print('订单ID：', auto_order)
                         th_pos = threading.Thread(target = Autotrading, args = (side,))
                         th_pos.start()
-                        th_pos.join()
+                        # th_pos.join()
                         # pr_pos = Process(target = Autotrading, args = (side,))
                         # pr_pos.start()
                         # pr_pos.join()
@@ -859,7 +859,7 @@ def Autoorders():
                         print('订单ID：', auto_order)
                         th_pos = threading.Thread(target = Autotrading, args = (side,))
                         th_pos.start()
-                        th_pos.join()
+                        # th_pos.join()
                         # pr_pos = Process(target = Autotrading, args = (side,))
                         # pr_pos.start()
                         # pr_pos.join()
@@ -916,7 +916,8 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    Autoorders()
+    #Autoorders()
+    pprint(bn.fetch_ohlcv(symbol, '5m', limit = 5))
         
 
     

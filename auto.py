@@ -638,9 +638,8 @@ def Autotrading(side):
         print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         pos_lev = check_positions()[side]['pos_lev']
         defense_order_dict = {}
-        limit_price = 0
         defense_order_list = []
-        trigger_price = 0
+        ch_5m = int(avg_ch('5m'))
         if side == 'LONG':
             pos_price = check_positions()[side]['pos_price']
             limit_price = pos_price + int(avg_ch('15m') * 0.5)
@@ -652,7 +651,7 @@ def Autotrading(side):
                     break
                 else:
                     price_step = int(avg_ch('15m') * 0.5)
-                    sl_price = round(pos_price - pos_price * 0.25 / pos_lev,2)
+                    sl_price = round(pos_price - pos_price * 0.24 / pos_lev,2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
                     if bn.fetch_ticker(symbol)['last'] > trigger_price:
@@ -660,15 +659,21 @@ def Autotrading(side):
                         if btc_price < limit_price:
                             adj_value = round((trigger_price - pos_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(pos_price - pos_price * 0.125 / pos_lev)                                 
+                                defense_price = int(pos_price - pos_price * 0.12 / pos_lev)                                 
                             else:
-                                defense_price = int(pos_price + int(avg_ch('5m') * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
+                                defense_price = int(pos_price + ch_5m * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
                                     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
+                                if btc_price - defense_price < price_step:
+                                    ch_5m = int(ch_5m * 0.9)
+                                    continue
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                defense_order_list.append(defense_order)
-                                defense_order_dict[trigger_price] = defense_order
+                                try:
+                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    defense_order_list.append(defense_order)
+                                    defense_order_dict[trigger_price] = defense_order
+                                except:
+                                    continue
                             else:
                                 time.sleep(8)
                                 continue                            
@@ -702,7 +707,7 @@ def Autotrading(side):
                     break
                 else:
                     price_step = int(avg_ch('15m') * 0.5)
-                    sl_price = round(pos_price / (1 - 0.25 / pos_lev),2)
+                    sl_price = round(pos_price / (1 - 0.24 / pos_lev),2)
                     if not db_search(side, sl_price):
                         alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
                     if bn.fetch_ticker(symbol)['last'] < trigger_price:
@@ -710,15 +715,21 @@ def Autotrading(side):
                         if btc_price > limit_price:
                             adj_value = round((pos_price - trigger_price) / price_step) - 1
                             if trigger_price == pos_price:
-                                defense_price = int(pos_price / (1 - 0.125 / pos_lev))                                 
+                                defense_price = int(pos_price / (1 - 0.12 / pos_lev))                                 
                             else:
-                                defense_price = int(pos_price - int(avg_ch('5m') * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
+                                defense_price = int(pos_price - ch_5m * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
                                     defense_price = int(pos_price / (1 + 0.03 / pos_lev))
+                                if defense_order - btc_price < price_step:
+                                    ch_5m = int(ch_5m * 0.9)
+                                    continue                                    
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                defense_order_list.append(defense_order)
-                                defense_order_dict[trigger_price] = defense_order
+                                try:
+                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    defense_order_list.append(defense_order)
+                                    defense_order_dict[trigger_price] = defense_order
+                                except:
+                                    continue
                             else:
                                 time.sleep(8)
                                 continue

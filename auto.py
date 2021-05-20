@@ -799,7 +799,7 @@ def Autoorders():
                 while ma(3, '30m') - ma(5, '30m') > 0:
                     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                     ma_ch = ma(3, '30m') - ma(5, '30m')
-                    ma3 = ma(3, '30m')
+                    ma3 = ma(3, '15m')
                     time.sleep(930)
                     if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
                         side = 'SHORT'
@@ -807,8 +807,8 @@ def Autoorders():
                         if not pos_status(side):
                             auto_order = auto_create(side)
                             time.sleep(60)
-                    elif ma(3, '30m') - ma(5, '30m') > 90:
-                        if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '30m') > ma3:
+                    elif ma(3, '30m') - ma(5, '30m') > 120:
+                        if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '15m') > ma3:
                             side = 'LONG'
                             if not pos_status(side):
                                 auto_order = auto_create(side)
@@ -837,7 +837,7 @@ def Autoorders():
                 while ma(5, '30m') - ma(3, '30m') > 0:
                     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                     ma_ch = ma(5, '30m') - ma(3, '30m')
-                    ma5 = ma(5, '30m')
+                    ma5 = ma(5, '15m')
                     time.sleep(930)
                     if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
                         side = 'LONG'
@@ -846,7 +846,7 @@ def Autoorders():
                             auto_order = auto_create(side)
                             time.sleep(60)
                     elif ma(5, '30m') - ma(3, '30m') > 90:
-                        if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '30m') < ma5:
+                        if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '15m') < ma5:
                             side = 'SHORT'
                             if not pos_status(side):
                                 auto_order = auto_create(side)

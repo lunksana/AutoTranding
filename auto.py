@@ -804,12 +804,12 @@ def Autoorders():
                         continue
                     if bn.fetch_order_status(auto_order, symbol) == 'closed':
                         print('订单ID：', auto_order)
-                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        # th_pos.start()
-                        # th_pos.join()
-                        pr_pos = Process(target = Autotrading, args = (side,))
-                        pr_pos.start()
-                        pr_pos.join()
+                        th_pos = threading.Thread(target = Autotrading, args = (side,))
+                        th_pos.start()
+                        th_pos.join()
+                        # pr_pos = Process(target = Autotrading, args = (side,))
+                        # pr_pos.start()
+                        # pr_pos.join()
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)
@@ -842,12 +842,12 @@ def Autoorders():
                         continue
                     if bn.fetch_order_status(auto_order, symbol) == 'closed':
                         print('订单ID：', auto_order)
-                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        # th_pos.start()
-                        # th_pos.join()
-                        pr_pos = Process(target = Autotrading, args = (side,))
-                        pr_pos.start()
-                        pr_pos.join()
+                        th_pos = threading.Thread(target = Autotrading, args = (side,))
+                        th_pos.start()
+                        th_pos.join()
+                        # pr_pos = Process(target = Autotrading, args = (side,))
+                        # pr_pos.start()
+                        # pr_pos.join()
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)

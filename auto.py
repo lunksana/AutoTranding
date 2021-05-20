@@ -916,8 +916,7 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    #Autoorders()
-    pprint(bn.fetch_ohlcv(symbol, '5m', limit = 5))
+    Autoorders()
         
 
     

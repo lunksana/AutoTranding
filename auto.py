@@ -661,7 +661,7 @@ def Autotrading(side):
                             if trigger_price == pos_price:
                                 defense_price = int(pos_price - pos_price * 0.12 / pos_lev)                                 
                             else:
-                                defense_price = int(pos_price + ch_5m * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
+                                defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
                                     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                                 if btc_price - defense_price < price_step:
@@ -717,7 +717,7 @@ def Autotrading(side):
                             if trigger_price == pos_price:
                                 defense_price = int(pos_price / (1 - 0.12 / pos_lev))                                 
                             else:
-                                defense_price = int(pos_price - ch_5m * 0.782) * adj_value * (0.6 + 0.2 * adj_value))
+                                defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
                                     defense_price = int(pos_price / (1 + 0.03 / pos_lev))
                                 if defense_order - btc_price < price_step:

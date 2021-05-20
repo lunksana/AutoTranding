@@ -720,7 +720,7 @@ def Autotrading(side):
                                 defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
                                 if abs(defense_price - pos_price) < 1:
                                     defense_price = int(pos_price / (1 + 0.03 / pos_lev))
-                                if defense_order - btc_price < price_step:
+                                if defense_price - btc_price < price_step:
                                     ch_5m = int(ch_5m * 0.9)
                                     continue                                    
                             if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):

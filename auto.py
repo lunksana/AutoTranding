@@ -25,21 +25,25 @@ symbol = 'BTC/USDT'
 positions_split = 50
 leverage = 20
 # 多进程模式下对接数据库的方式需要类似与如下类型
-# dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)
-# db = dbclient['bn']
+dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)
+db = dbclient['bn']
 # db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
 # price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price
-def db_link(name):
-    db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)[name]
-    return db
-db = db_link('bn')
-price_db = db_link('price')
-# 挂单
-order_col = db_link('bn').orders
-# 已成交订单
-trade_col = db_link('bn').trades
-# 资金情况
-funds_col = db_link('bn').funds
+# def db_link(name):
+#     db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)[name]
+#     return db
+# db = db_link('bn')
+# price_db = db_link('price')
+# # 挂单
+# order_col = db_link('bn').orders
+# # 已成交订单
+# trade_col = db_link('bn').trades
+# # 资金情况
+# funds_col = db_link('bn').funds
+price_db = dbclient['price']
+order_col = db['orders']
+trade_col = db['trades']
+funds_col = db['funds']
 
 bn = ccxt.binance({
     'enableRateLimit': True,

@@ -25,7 +25,7 @@ symbol = 'BTC/USDT'
 positions_split = 50
 leverage = 20
 # 多进程模式下对接数据库的方式需要类似与如下类型
-dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport, connect = False)
+dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport)
 db = dbclient['bn']
 # db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).bn
 # price_db = pymongo.MongoClient(userapi.dbaddr, userapi.dbport).price

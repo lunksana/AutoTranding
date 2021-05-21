@@ -610,21 +610,16 @@ def mesh_price(pos_price,side):
     return mesh_price
 
 # 基于push plus的推送功能    
-def push_message(push_type):
+def push_message(msg):
     token = userapi.pushtoken
     url = 'http://www.pushplus.plus/send'
-    push_type_list = ['error', 'info', 'order', 'funds']
-    if push_type not in push_type_list:
-        print('推送模式错误！')
-        return
-    elif push_type == 'error':
-        title = '运行错误！'
-        content = "# BTC \n **当前价格:**  " + str(bn.fetch_ticker(symbol)['last']) + "\n" #改成你要的正文内容
-        data = {
-            "token":token,
-            "title":title,
-            "content":content,
-            "template":"markdown"
+    title = '数字货币运行脚本！'
+    content = str(msg)
+    data = {
+        "token": token,
+        "title": title,
+        "content": content,
+        "template": "json"
         }   
     body=json.dumps(data).encode(encoding='utf-8')
     headers = {'Content-Type':'application/json'}
@@ -794,6 +789,13 @@ def auto_create(side):
         balance = bn.fetch_total_balance()['USDT']
         amount = round(balance / positions_split / btc_price * leverage, 3)
         auto_order = make_order(order_price, amount)
+    push_msg = {
+        '标题：': '建立{}订单'.format(side),
+        '订单ID：': auto_order,
+        '成交量：': amount,
+        '订单成交时间：': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    }
+    push_message(push_msg)
     return auto_order
 
     

@@ -634,139 +634,151 @@ def push_message(push_type):
 # 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
-    if pos_status(side):
-        print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        pos_lev = check_positions()[side]['pos_lev']
-        defense_order_dict = {}
-        defense_order_list = []
-        ch_5m = int(avg_ch('5m'))
-        if side == 'LONG':
-            pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price + int(avg_ch('15m') * 0.5)
-            trigger_price = pos_price
-            retry = 5
-            while pos_status(side):
-                if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.25 / pos_lev:
-                    create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
-                    break
-                else:
-                    price_step = int(avg_ch('15m') * 0.5)
-                    sl_price = round(pos_price - pos_price * 0.24 / pos_lev,2)
-                    if not db_search(side, sl_price):
-                        alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
-                    if bn.fetch_ticker(symbol)['last'] > trigger_price:
-                        btc_price = bn.fetch_ticker(symbol)['last']
-                        if btc_price < limit_price:
-                            adj_value = round((trigger_price - pos_price) / price_step) - 1
-                            if trigger_price == pos_price:
-                                defense_price = int(pos_price - pos_price * 0.12 / pos_lev)                                 
+    try:
+        if pos_status(side):
+            print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            event = threading.Event()
+            pos_lev = check_positions()[side]['pos_lev']
+            defense_order_dict = {}
+            defense_order_list = []
+            ch_5m = int(avg_ch('5m'))
+            if side == 'LONG':
+                pos_price = check_positions()[side]['pos_price']
+                limit_price = pos_price + int(avg_ch('15m') * 0.5)
+                trigger_price = pos_price
+                retry = 5
+                safe_nu = 1
+                safe_order_list = []
+                while pos_status(side):
+                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.25 / pos_lev:
+                        create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
+                        break
+                    else:
+                        price_step = int(avg_ch('15m') * 0.5)
+                        sl_price = round(pos_price - pos_price * 0.24 / pos_lev,2)
+                        if not db_search(side, sl_price):
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
+                            create_time = time.time()
+                        if bn.fetch_ticker(symbol)['last'] > trigger_price:
+                            btc_price = bn.fetch_ticker(symbol)['last']
+                            if btc_price < limit_price:
+                                adj_value = round((trigger_price - pos_price) / price_step) - 1
+                                if trigger_price == pos_price:
+                                    defense_price = int(pos_price - pos_price * 0.12 / pos_lev)                                 
+                                else:
+                                    defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
+                                    if abs(defense_price - pos_price) < 1:
+                                        defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
+                                    if btc_price - defense_price < price_step:
+                                        ch_5m = int(ch_5m * 0.9)
+                                        continue
+                                if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
+                                    try:
+                                        defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                        defense_order_list.append(defense_order)
+                                        defense_order_dict[trigger_price] = defense_order
+                                    except:
+                                        continue
+                                else:
+                                    event.wait(5)
+                                    continue                            
+                                print(defense_price, defense_order_list)
                             else:
-                                defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
-                                if abs(defense_price - pos_price) < 1:
-                                    defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
-                                if btc_price - defense_price < price_step:
-                                    ch_5m = int(ch_5m * 0.9)
+                                price_step = int(avg_ch('15m') * 0.5)
+                                if btc_price - limit_price > price_step:
+                                    limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
+                                else:
+                                    limit_price += price_step
+                                trigger_price = limit_price - price_step
+                                if len(defense_order_list) > 3:
+                                    bn.cancel_order(defense_order_list[0], symbol)
+                                    del defense_order_list[0]
+                        # elif bn.fetch_ticker(symbol)['last'] < pos_price and time.time() - create_time > 600 and not db_search(side, int(pos_price - pos_price * 0.12 / pos_lev)):
+                        #     safe_order_list.append(create_tpsl_order('STOP', 1, round(pos_price - pos_price * (0.24 - 0.02 * safe_nu) / pos_lev, 2)))
+                        #     safe_nu += 1
+                        #     create_time = time.time()
+                    print(trigger_price,limit_price,bn.fetch_ticker(symbol)['last'])
+                    if retry == 0:
+                        event.wait(10)
+                        print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                        retry = 5
+                    else:
+                        event.wait(5)
+                        retry -= 1
+            else:
+                pos_price = check_positions()[side]['pos_price']
+                limit_price = pos_price - int(avg_ch('15m') * 0.5)
+                trigger_price = pos_price
+                retry = 5
+                while pos_status(side):
+                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.25 / pos_lev):
+                        create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
+                        break
+                    else:
+                        price_step = int(avg_ch('15m') * 0.5)
+                        sl_price = round(pos_price / (1 - 0.24 / pos_lev),2)
+                        if not db_search(side, sl_price):
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                            create_time = time.time()
+                        if bn.fetch_ticker(symbol)['last'] < trigger_price:
+                            btc_price = bn.fetch_ticker(symbol)['last']
+                            if btc_price > limit_price:
+                                adj_value = round((pos_price - trigger_price) / price_step) - 1
+                                if trigger_price == pos_price:
+                                    defense_price = int(pos_price / (1 - 0.12 / pos_lev))                                 
+                                else:
+                                    defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
+                                    if abs(defense_price - pos_price) < 1:
+                                        defense_price = int(pos_price / (1 + 0.03 / pos_lev))
+                                    if defense_price - btc_price < price_step:
+                                        ch_5m = int(ch_5m * 0.9)
+                                        continue                                    
+                                if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
+                                    try:
+                                        defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                        defense_order_list.append(defense_order)
+                                        defense_order_dict[trigger_price] = defense_order
+                                    except:
+                                        continue
+                                else:
+                                    event.wait(5)
                                     continue
-                            if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                try:
-                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                    defense_order_list.append(defense_order)
-                                    defense_order_dict[trigger_price] = defense_order
-                                except:
-                                    continue
+                                print(defense_price, defense_order_list)
                             else:
-                                time.sleep(8)
-                                continue                            
-                            print(defense_price, defense_order_list)
-                        else:
-                            price_step = int(avg_ch('15m') * 0.5)
-                            if btc_price - limit_price > price_step:
-                                limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
-                            else:
-                                limit_price += price_step
-                            trigger_price = limit_price - price_step
-                            if len(defense_order_list) > 3:
-                                bn.cancel_order(defense_order_list[0], symbol)
-                                del defense_order_list[0]
-                print(trigger_price,limit_price,bn.fetch_ticker(symbol)['last'])
-                if retry == 0:
-                    time.sleep(15)
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-                    retry = 5
-                else:
-                    time.sleep(5)
-                    retry -= 1
+                                price_step = int(avg_ch('15m') * 0.5)
+                                if limit_price - btc_price > price_step:
+                                    limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
+                                else:
+                                    limit_price -= price_step
+                                trigger_price = limit_price + price_step
+                                if len(defense_order_list) > 3:
+                                    bn.cancel_order(defense_order_list[0], symbol)
+                                    del defense_order_list[0]
+                    print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
+                    if retry == 0:
+                        event.wait(10)
+                        print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                        retry = 5
+                    else:
+                        event.wait(5)
+                        retry -= 1
+            try:
+                bn.cancel_order(alert_order, symbol)
+            except:
+                pass
+            finally:
+                for order_id in defense_order_list:
+                    try:
+                        bn.cancel_order(order_id, symbol)
+                    except:
+                        pass
+            order_check()
+            print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         else:
-            pos_price = check_positions()[side]['pos_price']
-            limit_price = pos_price - int(avg_ch('15m') * 0.5)
-            trigger_price = pos_price
-            retry = 5
-            while pos_status(side):
-                if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.25 / pos_lev):
-                    create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
-                    break
-                else:
-                    price_step = int(avg_ch('15m') * 0.5)
-                    sl_price = round(pos_price / (1 - 0.24 / pos_lev),2)
-                    if not db_search(side, sl_price):
-                        alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
-                    if bn.fetch_ticker(symbol)['last'] < trigger_price:
-                        btc_price = bn.fetch_ticker(symbol)['last']
-                        if btc_price > limit_price:
-                            adj_value = round((pos_price - trigger_price) / price_step) - 1
-                            if trigger_price == pos_price:
-                                defense_price = int(pos_price / (1 - 0.12 / pos_lev))                                 
-                            else:
-                                defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
-                                if abs(defense_price - pos_price) < 1:
-                                    defense_price = int(pos_price / (1 + 0.03 / pos_lev))
-                                if defense_price - btc_price < price_step:
-                                    ch_5m = int(ch_5m * 0.9)
-                                    continue                                    
-                            if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                try:
-                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                    defense_order_list.append(defense_order)
-                                    defense_order_dict[trigger_price] = defense_order
-                                except:
-                                    continue
-                            else:
-                                time.sleep(8)
-                                continue
-                            print(defense_price, defense_order_list)
-                        else:
-                            price_step = int(avg_ch('15m') * 0.5)
-                            if limit_price - btc_price > price_step:
-                                limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
-                            else:
-                                limit_price -= price_step
-                            trigger_price = limit_price + price_step
-                            if len(defense_order_list) > 3:
-                                bn.cancel_order(defense_order_list[0], symbol)
-                                del defense_order_list[0]
-                print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
-                if retry == 0:
-                    time.sleep(15)
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-                    retry = 5
-                else:
-                    time.sleep(5)
-                    retry -= 1
-        try:
-            bn.cancel_order(alert_order, symbol)
-        except:
-            pass
-        finally:
-            for order_id in defense_order_list:
-                try:
-                    bn.cancel_order(order_id, symbol)
-                except:
-                    pass
-        order_check()
-        print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-    else:
-        order_check()
-        print('无持仓！')
+            order_check()
+            print('无持仓！')
+    except:
+        Autotrading(side)
 
 # 自动进行开单
 def auto_create(side):

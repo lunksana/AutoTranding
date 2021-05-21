@@ -829,16 +829,16 @@ def Autoorders():
                             continue
                     else:
                         continue
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed' and auto_order not in threading.enumerate():
                         print('订单ID：', auto_order)
-                        th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        th_pos.start()
+                        threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
+                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                        # th_pos.start()
                         # th_pos.join()
                         # pr_pos = Process(target = Autotrading, args = (side,))
                         # pr_pos.start()
                         # pr_pos.join()
-                        if threading.active_count() > 1:
-                            print(threading.enumerate())
+                        print(threading.enumerate())
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)
@@ -869,16 +869,16 @@ def Autoorders():
                             continue   
                     else:
                         continue
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed' and auto_order not in threading.enumerate():
                         print('订单ID：', auto_order)
-                        th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        th_pos.start()
+                        threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
+                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                        # th_pos.start()
                         # th_pos.join()
                         # pr_pos = Process(target = Autotrading, args = (side,))
                         # pr_pos.start()
                         # pr_pos.join()
-                        if threading.active_count() > 1:
-                            print(threading.enumerate())
+                        print(threading.enumerate())
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)

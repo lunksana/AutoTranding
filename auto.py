@@ -806,6 +806,7 @@ def Autoorders():
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             break
         else:
+            pprint(threading.enumerate())
             if ma(3, '30m') - ma(5, '30m') > 0:
                 print('MA3 - MA5:', ma(3, '30m') - ma(5, '30m'))
                 side = 'LONG'
@@ -831,7 +832,7 @@ def Autoorders():
                             continue
                     else:
                         continue
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed' and auto_order not in threading.enumerate():
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
                         print('订单ID：', auto_order)
                         threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
                         # th_pos = threading.Thread(target = Autotrading, args = (side,))
@@ -840,7 +841,7 @@ def Autoorders():
                         # pr_pos = Process(target = Autotrading, args = (side,))
                         # pr_pos.start()
                         # pr_pos.join()
-                        print(threading.enumerate())
+                        pprint(threading.enumerate())
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)
@@ -871,7 +872,7 @@ def Autoorders():
                             continue   
                     else:
                         continue
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed' and auto_order not in threading.enumerate():
+                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
                         print('订单ID：', auto_order)
                         threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
                         # th_pos = threading.Thread(target = Autotrading, args = (side,))
@@ -880,7 +881,7 @@ def Autoorders():
                         # pr_pos = Process(target = Autotrading, args = (side,))
                         # pr_pos.start()
                         # pr_pos.join()
-                        print(threading.enumerate())
+                        pprint(threading.enumerate())
                         break
                     else:
                         bn.cancel_order(auto_order, symbol)

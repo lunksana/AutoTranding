@@ -22,8 +22,8 @@ from pprint import pprint
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-positions_split = 50
-leverage = 20
+positions_split = 45
+leverage = 18
 event = threading.Event()
 # 多进程模式下对接数据库的方式需要类似与如下类型
 dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport)
@@ -437,6 +437,20 @@ def positions_info(position_list):
         positions_info = dict([(position_list[0]['positionSide'],position_list[0])])
     return positions_info 
          
+# 修改杠杆
+def ch_lev(lev):
+    if len(fetch_positions(symbol)) > 0:
+        print('在持仓模式下无法修改杠杆！')
+        return
+    elif lev < 1 or lev > 125:
+        print('超出杠杆范围！')
+        return
+    else:
+        print(bn.fapiPrivate_post_leverage({
+            'symbol': symbol.replace('/', ''),
+            'leverage': lev
+        }))
+        return
 
 # 实时价格
 def price_now():
@@ -801,6 +815,7 @@ def auto_create(side):
     
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    ch_lev(leverage)
     while True:
         if bn.fetch_free_balance()['USDT'] <= 270:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -936,6 +951,7 @@ if __name__ == '__main__':
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
     Autoorders()
+    
         
 
     

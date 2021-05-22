@@ -315,8 +315,8 @@ def db_search(side, price):
 如果输入的是没有参数的情况，那将自动遍历订单，自动对已经发生变化的订单进行数据库操作
 '''
 def order_check(order_id = None):
-    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('order_uptime', -1)]).limit(72))
-    start_time = order_col.find_one({'order_id': db_order_list[-1]})['order_uptime']
+    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('order_uptime', -1)]).limit(36))
+    start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['order_uptime']
     db_trade_list = list(trade_col.find({'order_uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
     # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
     order_id_list = [x['order_id'] for x in db_order_list]

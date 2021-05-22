@@ -315,8 +315,9 @@ def db_search(side, price):
 如果输入的是没有参数的情况，那将自动遍历订单，自动对已经发生变化的订单进行数据库操作
 '''
 def order_check(order_id = None):
-    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}))
-    db_trade_list = list(trade_col.find({},{'_id': 0, 'trade_id': 1}))
+    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('order_uptime', -1)]).limit(72))
+    start_time = order_col.find_one({'order_id': db_order_list[-1]})['order_uptime']
+    db_trade_list = list(trade_col.find({'order_uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
     # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
     order_id_list = [x['order_id'] for x in db_order_list]
     trade_id_list = [x['trade_id'] for x in db_trade_list]
@@ -678,9 +679,6 @@ def Autotrading(side):
                                     defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
                                     if abs(defense_price - pos_price) < 1:
                                         defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
-                                    if btc_price - defense_price < price_step:
-                                        ch_5m = int(ch_5m * 0.9)
-                                        continue
                                 if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                     try:
                                         defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
@@ -738,10 +736,7 @@ def Autotrading(side):
                                 else:
                                     defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
                                     if abs(defense_price - pos_price) < 1:
-                                        defense_price = int(pos_price / (1 + 0.03 / pos_lev))
-                                    if defense_price - btc_price < price_step:
-                                        ch_5m = int(ch_5m * 0.9)
-                                        continue                                    
+                                        defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
                                 if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
                                     try:
                                         defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
@@ -812,6 +807,9 @@ def auto_create(side):
     push_message(push_msg)
     return auto_order
 
+def con_sel():
+    while ma(3, '30m') - ma(5, '30m') > 90:
+        pass
     
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -917,9 +915,6 @@ def loop(function, fun_args = None):
         else:
             th = threading.Thread(function)
     return th 
-
-
-    
     
 def main():
     order_check()
@@ -939,12 +934,6 @@ def main():
                 event.wait(60)
                 continue
         
-
-
-
-        
-    
-
 if __name__ == '__main__':
     print('5m:',avg_ch('5m'))
     print('15m:',avg_ch('15m'))

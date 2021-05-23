@@ -649,25 +649,25 @@ def Autotrading(side):
         if pos_status(side):
             print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             pos_lev = check_positions()[side]['pos_lev']
+            pos_price = check_positions()[side]['pos_price']
+            price_step = int(pos_price * 0.1 / pos_lev)
             defense_order_dict = {}
             defense_order_list = []
             ch_5m = int(avg_ch('5m'))
             if side == 'LONG':
-                pos_price = check_positions()[side]['pos_price']
-                limit_price = pos_price + int(avg_ch('15m') * 0.5)
+                limit_price = pos_price + price_step
                 trigger_price = pos_price
                 retry = 5
                 safe_nu = 1
                 safe_order_list = []
                 while pos_status(side):
-                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.25 / pos_lev:
+                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.24 / pos_lev:
                         create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                         break
                     else:
-                        price_step = int(avg_ch('15m') * 0.5)
-                        sl_price = round(pos_price - pos_price * 0.24 / pos_lev,2)
+                        sl_price = round(pos_price - pos_price * 0.24 / pos_lev, 2)
                         if not db_search(side, sl_price):
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side)#25%止损单
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side)#24%止损单
                             create_time = time.time()
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
@@ -691,7 +691,6 @@ def Autotrading(side):
                                     continue                            
                                 print(defense_price, defense_order_list)
                             else:
-                                price_step = int(avg_ch('15m') * 0.5)
                                 if btc_price - limit_price > price_step:
                                     limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
                                 else:
@@ -713,19 +712,17 @@ def Autotrading(side):
                         event.wait(5)
                         retry -= 1
             else:
-                pos_price = check_positions()[side]['pos_price']
-                limit_price = pos_price - int(avg_ch('15m') * 0.5)
+                limit_price = pos_price - price_step
                 trigger_price = pos_price
                 retry = 5
                 while pos_status(side):
-                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.25 / pos_lev):
+                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.24 / pos_lev):
                         create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
                         break
                     else:
-                        price_step = int(avg_ch('15m') * 0.5)
-                        sl_price = round(pos_price / (1 - 0.24 / pos_lev),2)
+                        sl_price = round(pos_price / (1 - 0.24 / pos_lev), 2)
                         if not db_search(side, sl_price):
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #25%止损单
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #24%止损单
                             create_time = time.time()
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
@@ -749,7 +746,6 @@ def Autotrading(side):
                                     continue
                                 print(defense_price, defense_order_list)
                             else:
-                                price_step = int(avg_ch('15m') * 0.5)
                                 if limit_price - btc_price > price_step:
                                     limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
                                 else:

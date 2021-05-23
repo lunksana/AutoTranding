@@ -22,8 +22,8 @@ from pprint import pprint
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-positions_split = 45
-leverage = 18
+positions_split = 40
+leverage = 16
 event = threading.Event()
 # 多进程模式下对接数据库的方式需要类似与如下类型
 dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport)

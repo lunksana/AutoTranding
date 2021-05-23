@@ -804,8 +804,38 @@ def auto_create(side):
     return auto_order
 
 def con_sel():
-    while ma(3, '30m') - ma(5, '30m') > 90:
-        pass
+    while ma(3, '30m') - ma(5, '30m') > 0:
+        close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+        ma_ch = ma(3, '30m') - ma(5, '30m')
+        ma3 = ma(3, '15m')
+        event.wait(1200)
+        if ma(3, '30m') - ma(5, '30m') < ma_ch and ma(3, '15m') < ma3 and bn.fetch_ticker(symbol)['last'] < close_price:
+            side = 'SHORT'
+        elif ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
+            side = 'SHORT'
+        elif ma(3, '30m') - ma(5, '30m') > 120 > ma_ch and ma(3, '15m') > ma3:
+            side = 'LONG'
+        else:
+            continue
+    while ma(5, '30m') - ma(3, '30m') > 0:
+        close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+        ma_ch = ma(5, '30m') - ma(3, '30m')
+        ma5 = ma(5, '15m')
+        event.wait(1200)
+        if ma(5, '30m') - ma(3, '30m') < ma_ch and bn.fetch_ticker(symbol)['last'] > close_price:
+            side = 'LONG'
+        elif ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
+            side = 'LONG'
+        elif ma(5, '30m') - ma(3, '30m') > 120 > ma_ch and ma(5, '15m') < ma5:
+            side = 'SHORT'                   
+        else:
+            continue
+    if not pos_status(side):
+        auto_order = auto_create(side)
+        event.wait(5)
+        return auto_order
+    else:
+        con_sel()
     
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))

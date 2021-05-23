@@ -410,7 +410,7 @@ def ma(long, time):
 def fetch_positions(symbol):
     bn_symbol = symbol.replace('/','')
     positions_list = []
-    for i in bn.fapiPrivateV2GetPositionRisk():
+    for i in bn.fapiPrivateV2GetPositionRisk({'symbol': bn_symbol}):
         if i != None:
             if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
                 positions_list.append(i)
@@ -418,7 +418,7 @@ def fetch_positions(symbol):
 
 def pos_status(side):
     bn_symbol = symbol.replace('/','')
-    for pos in bn.fapiPrivateV2GetPositionRisk():
+    for pos in bn.fapiPrivateV2GetPositionRisk({'symbol': bn_symbol}):
         if pos != None and pos['symbol'] == bn_symbol and float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
             return True
         else:
@@ -814,7 +814,7 @@ def con_sel():
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     ch_lev(leverage)
-    while True:
+    while 1:
         if bn.fetch_free_balance()['USDT'] <= 270:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             break
@@ -940,8 +940,6 @@ if __name__ == '__main__':
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
     Autoorders()
-    
-        
 
     
 

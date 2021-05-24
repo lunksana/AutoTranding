@@ -813,7 +813,7 @@ def th_create(q_in):
         order_id, event = q_in.get()
         event.set()
         threading.Thread(target = Autotrading, args = (order_col.find_one({'order_id': order_id})['positionSide'],)).start()
-
+# 使用event.wait()作为线程等待，当子线程执行event.set()之后即停止阻塞，实现了线程相应
 def con_sel(q_out):
     while ma(3, '30m') - ma(5, '30m') > 0:
         close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]

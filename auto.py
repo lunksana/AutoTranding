@@ -673,12 +673,12 @@ def Autotrading(side):
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
-                                adj_value = round((trigger_price - pos_price) / price_step)
+                                adj_value = round((trigger_price - pos_price) / price_step) -1
                                 if trigger_price == pos_price:
                                     defense_price = int(pos_price - pos_price * 0.12 / pos_lev)                                 
                                 else:
-                                    #defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
-                                    defense_price = int(pos_price * (1 + (0.01 + 0.02 * adj_value) / pos_lev))
+                                    defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
+                                    #defense_price = int(pos_price * (1 + (0.06 + 0.03 * adj_value) / pos_lev))
                                     if abs(defense_price - pos_price) < 1:
                                         defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                                 if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
@@ -810,7 +810,10 @@ def auto_create(side):
 def th_create(q_in):
     order_id, side, event = q_in.get()
     event.wait()
-    threading.Thread(target = Autotrading, args = (side,), name = order_id).start()
+    if side != None and order_id not in [nu.getName() for nu in threading.enumerate()]:
+        threading.Thread(target = Autotrading, args = (side,), name = order_id).start()
+    else:
+        return
 
 # 使用event.wait()作为线程等待，当子线程执行event.set()之后即停止阻塞，实现了线程相应
 def con_sel(q_out):
@@ -863,13 +866,15 @@ def con_sel(q_out):
                 break
             else:
                 continue
+    event = threading.Event()
     if side != None and not pos_status(side):
-        event = threading.Event()
         auto_order = auto_create(side)
         time.sleep(5)
         q_out.put((auto_order, side, event))
         event.set()
     else:
+        q_out.put((None, side, event))
+        event.set()
         return
     
 def Autoorders():
@@ -884,9 +889,14 @@ def Autoorders():
             if ma(3, '15m') - ma(5, '15m') > 0:
                 print('MA3 - MA5:', ma(3, '15m') - ma(5, '15m'))
                 side = 'LONG'
-                threading.Thread(target = con_sel, args = (que,), name = side).start()
-                threading.Thread(target = th_create, args = (que,)).start()
-                time.sleep(60)
+                if side not in [nm.getName() for nm in threading.enumerate()]:
+                    threading.Thread(target = con_sel, args = (que,), name = side).start()
+                    threading.Thread(target = th_create, args = (que,)).start()
+                    time.sleep(60)
+                    print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))) 
+                else:
+                    time.sleep(5)
+                    continue
                 # while ma(3, '30m') - ma(5, '30m') > 0:
                 #     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                 #     ma_ch = ma(3, '30m') - ma(5, '30m')
@@ -921,14 +931,18 @@ def Autoorders():
                 #         break
                 #     else:
                 #         bn.cancel_order(auto_order, symbol)
-                #         continue
-                print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
+                #         continue                
             else:
                 print('MA5 - MA3:', ma(5, '15m') - ma(3, '15m'))
                 side = 'SHORT'
-                threading.Thread(target = con_sel, args = (que,), name = side).start()
-                threading.Thread(target = th_create, args = (que,)).start()
-                time.sleep(60)
+                if side not in [nm.getName() for nm in threading.enumerate()]:
+                    threading.Thread(target = con_sel, args = (que,), name = side).start()
+                    threading.Thread(target = th_create, args = (que,)).start()
+                    time.sleep(60)
+                    print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                else:
+                    time.sleep(5)
+                    continue
                 # while ma(5, '30m') - ma(3, '30m') > 0:
                 #     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
                 #     ma_ch = ma(5, '30m') - ma(3, '30m')
@@ -964,7 +978,6 @@ def Autoorders():
                 #     else:
                 #         bn.cancel_order(auto_order, symbol)
                 #         continue
-                print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     print('程序退出！当前余额：{}'.format(bn.fetch_free_balance()['USDT']))
     return
             

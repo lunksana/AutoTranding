@@ -895,7 +895,7 @@ def Autoorders():
                     time.sleep(60)
                     print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))) 
                 else:
-                    time.sleep(5)
+                    time.sleep(300)
                     continue
                 # while ma(3, '30m') - ma(5, '30m') > 0:
                 #     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
@@ -941,7 +941,7 @@ def Autoorders():
                     time.sleep(60)
                     print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                 else:
-                    time.sleep(5)
+                    time.sleep(300)
                     continue
                 # while ma(5, '30m') - ma(3, '30m') > 0:
                 #     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]

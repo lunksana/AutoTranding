@@ -25,7 +25,6 @@ from queue import Queue
 symbol = 'BTC/USDT'
 positions_split = 40
 leverage = 16
-event = threading.Event()
 que = Queue()
 # 多进程模式下对接数据库的方式需要类似与如下类型
 dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport)
@@ -809,51 +808,69 @@ def auto_create(side):
     return auto_order
 
 def th_create(q_in):
-    while 1:
-        order_id, event = q_in.get()
-        event.set()
-        threading.Thread(target = Autotrading, args = (order_col.find_one({'order_id': order_id})['positionSide'],)).start()
+    order_id, side, event = q_in.get()
+    event.wait()
+    threading.Thread(target = Autotrading, args = (side,), name = order_id).start()
+
 # 使用event.wait()作为线程等待，当子线程执行event.set()之后即停止阻塞，实现了线程相应
 def con_sel(q_out):
-    while ma(3, '30m') - ma(5, '30m') > 0:
+    side = None
+    while ma(3, '15m') - ma(5, '15m') > 0:
         close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-        ma_ch = ma(3, '30m') - ma(5, '30m')
-        ma3 = ma(3, '15m')
-        time.sleep(1200)
-        if ma(3, '30m') - ma(5, '30m') < ma_ch and ma(3, '15m') < ma3 and bn.fetch_ticker(symbol)['last'] < close_price:
-            side = 'SHORT'
-            break
-        elif ma(5, '30m') - ma(3, '30m') > 100 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price and ma(5, '15m') - ma(3, '15m') > 0:
-            side = 'SHORT'
-            break
-        elif ma(3, '30m') - ma(5, '30m') > 150 > ma_ch and ma(3, '15m') > ma3:
-            side = 'LONG'
-            break
+        ma_15m_ch = ma(3, '15m') - ma(5, '15m')
+        ma_30m_ch = ma(3, '30m') - ma(5, '30m')
+        if ma_30m_ch < 0:
+            time.sleep(1200)
+            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch and ma_30m_ch > 0:
+                side = 'LONG'
+                break
+            elif ma(3, '15m') - ma(5, '15m') < 0 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
+                side = 'SHORT'
+                break
+            else:
+                continue
         else:
-            continue
-    while ma(5, '30m') - ma(3, '30m') > 0:
+            time.sleep(1200)
+            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch and ma(3, '30m') - ma(5, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] > close_price:
+                side = 'LONG'
+                break
+            elif ma(3, '15m') - ma(5, '15m') < 0 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
+                side = 'SHORT'
+                break
+            else:
+                continue
+    while ma(5, '15m') - ma(3, '15m') > 0:
         close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-        ma_ch = ma(5, '30m') - ma(3, '30m')
-        ma5 = ma(5, '15m')
-        time.sleep(1200)
-        if ma(5, '30m') - ma(3, '30m') < ma_ch and bn.fetch_ticker(symbol)['last'] > close_price:
-            side = 'LONG'
-            break
-        elif ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
-            side = 'LONG'
-            break
-        elif ma(5, '30m') - ma(3, '30m') > 120 > ma_ch and ma(5, '15m') < ma5:
-            side = 'SHORT'
-            break                   
+        ma_30m_ch = ma(5, '30m') - ma(3, '30m')
+        ma_15m_ch = ma(5, '15m') - ma(3, '15m')
+        if ma_30m_ch < 0:
+            time.sleep(1200)
+            if ma(5, '15m') - ma(3, '15m') < 0 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
+                side = 'LONG'
+                break
+            elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch and ma_30m_ch > 0:
+                side = 'SHORT'
+                break                  
+            else:
+                continue
         else:
-            continue
-    if not pos_status(side):
+            time.sleep(1200)
+            if ma(5, '15m') - ma(3, '15m') > ma_15m_ch and ma(5, '30m') - ma(3, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] < close_price:
+                side = 'SHORT'
+                break
+            elif ma(5, '15m') - ma(3, '15m') < 0 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
+                side = 'LONG'
+                break
+            else:
+                continue
+    if side != None and not pos_status(side):
+        event = threading.Event()
         auto_order = auto_create(side)
         time.sleep(5)
-        q_out.put((auto_order, event))
-        event.wait()
+        q_out.put((auto_order, side, event))
+        event.set()
     else:
-        con_sel()
+        return
     
 def Autoorders():
     print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -864,85 +881,89 @@ def Autoorders():
             break
         else:
             pprint(threading.enumerate())
-            if ma(3, '30m') - ma(5, '30m') > 0:
-                print('MA3 - MA5:', ma(3, '30m') - ma(5, '30m'))
+            if ma(3, '15m') - ma(5, '15m') > 0:
+                print('MA3 - MA5:', ma(3, '15m') - ma(5, '15m'))
                 side = 'LONG'
+                threading.Thread(target = con_sel, args = (que,), name = side).start()
+                threading.Thread(target = th_create, args = (que,)).start()
                 time.sleep(60)
-                while ma(3, '30m') - ma(5, '30m') > 0:
-                    close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-                    ma_ch = ma(3, '30m') - ma(5, '30m')
-                    ma3 = ma(3, '15m')
-                    time.sleep(1200)
-                    if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
-                        side = 'SHORT'
-                        # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
-                        if not pos_status(side):
-                            auto_order = auto_create(side)
-                            time.sleep(5)
-                    elif ma(3, '30m') - ma(5, '30m') > 120:
-                        if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '15m') > ma3:
-                            side = 'LONG'
-                            if not pos_status(side):
-                                auto_order = auto_create(side)
-                                time.sleep(5)     
-                        else:
-                            continue
-                    else:
-                        continue
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                        print('订单ID：', auto_order)
-                        threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
-                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        # th_pos.start()
-                        # th_pos.join()
-                        # pr_pos = Process(target = Autotrading, args = (side,))
-                        # pr_pos.start()
-                        # pr_pos.join()
-                        pprint(threading.enumerate())
-                        break
-                    else:
-                        bn.cancel_order(auto_order, symbol)
-                        continue
+                # while ma(3, '30m') - ma(5, '30m') > 0:
+                #     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+                #     ma_ch = ma(3, '30m') - ma(5, '30m')
+                #     ma3 = ma(3, '15m')
+                #     time.sleep(1200)
+                #     if ma(5, '30m') - ma(3, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] < close_price:
+                #         side = 'SHORT'
+                #         # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
+                #         if not pos_status(side):
+                #             auto_order = auto_create(side)
+                #             time.sleep(5)
+                #     elif ma(3, '30m') - ma(5, '30m') > 120:
+                #         if ma(3, '30m') - ma(5, '30m') > ma_ch and ma(3, '15m') > ma3:
+                #             side = 'LONG'
+                #             if not pos_status(side):
+                #                 auto_order = auto_create(side)
+                #                 time.sleep(5)     
+                #         else:
+                #             continue
+                #     else:
+                #         continue
+                #     if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                #         print('订单ID：', auto_order)
+                #         threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
+                #         # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                #         # th_pos.start()
+                #         # th_pos.join()
+                #         # pr_pos = Process(target = Autotrading, args = (side,))
+                #         # pr_pos.start()
+                #         # pr_pos.join()
+                #         pprint(threading.enumerate())
+                #         break
+                #     else:
+                #         bn.cancel_order(auto_order, symbol)
+                #         continue
                 print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))                
             else:
-                print('MA5 - MA3:', ma(5, '30m') - ma(3, '30m'))
+                print('MA5 - MA3:', ma(5, '15m') - ma(3, '15m'))
                 side = 'SHORT'
+                threading.Thread(target = con_sel, args = (que,), name = side).start()
+                threading.Thread(target = th_create, args = (que,)).start()
                 time.sleep(60)
-                while ma(5, '30m') - ma(3, '30m') > 0:
-                    close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-                    ma_ch = ma(5, '30m') - ma(3, '30m')
-                    ma5 = ma(5, '15m')
-                    time.sleep(1200)
-                    if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
-                        side = 'LONG'
-                        # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
-                        if not pos_status(side):
-                            auto_order = auto_create(side)
-                            time.sleep(5)
-                    elif ma(5, '30m') - ma(3, '30m') > 90:
-                        if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '15m') < ma5:
-                            side = 'SHORT'
-                            if not pos_status(side):
-                                auto_order = auto_create(side)
-                                time.sleep(5)
-                        else:
-                            continue   
-                    else:
-                        continue
-                    if bn.fetch_order_status(auto_order, symbol) == 'closed':
-                        print('订单ID：', auto_order)
-                        threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
-                        # th_pos = threading.Thread(target = Autotrading, args = (side,))
-                        # th_pos.start()
-                        # th_pos.join()
-                        # pr_pos = Process(target = Autotrading, args = (side,))
-                        # pr_pos.start()
-                        # pr_pos.join()
-                        pprint(threading.enumerate())
-                        break
-                    else:
-                        bn.cancel_order(auto_order, symbol)
-                        continue
+                # while ma(5, '30m') - ma(3, '30m') > 0:
+                #     close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+                #     ma_ch = ma(5, '30m') - ma(3, '30m')
+                #     ma5 = ma(5, '15m')
+                #     time.sleep(1200)
+                #     if ma(3, '30m') - ma(5, '30m') > 90 and bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4] > close_price:
+                #         side = 'LONG'
+                #         # if len(bn.fetch_open_orders(symbol)) < 2 and side not in [ x['info']['positionSide'] for x in bn.fetch_open_orders(symbol) if x['type'] == 'limit']:
+                #         if not pos_status(side):
+                #             auto_order = auto_create(side)
+                #             time.sleep(5)
+                #     elif ma(5, '30m') - ma(3, '30m') > 90:
+                #         if ma(5, '30m') - ma(3, '30m') > ma_ch and ma(5, '15m') < ma5:
+                #             side = 'SHORT'
+                #             if not pos_status(side):
+                #                 auto_order = auto_create(side)
+                #                 time.sleep(5)
+                #         else:
+                #             continue   
+                #     else:
+                #         continue
+                #     if bn.fetch_order_status(auto_order, symbol) == 'closed':
+                #         print('订单ID：', auto_order)
+                #         threading.Thread(target = Autotrading, args = (side,), name = auto_order).start()
+                #         # th_pos = threading.Thread(target = Autotrading, args = (side,))
+                #         # th_pos.start()
+                #         # th_pos.join()
+                #         # pr_pos = Process(target = Autotrading, args = (side,))
+                #         # pr_pos.start()
+                #         # pr_pos.join()
+                #         pprint(threading.enumerate())
+                #         break
+                #     else:
+                #         bn.cancel_order(auto_order, symbol)
+                #         continue
                 print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     print('程序退出！当前余额：{}'.format(bn.fetch_free_balance()['USDT']))
     return

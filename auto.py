@@ -886,6 +886,7 @@ def Autoorders():
             break
         else:
             pprint(threading.enumerate())
+            print(bn.fetch_ticker(symbol)['last'])
             if ma(3, '15m') - ma(5, '15m') > 0:
                 print('MA3 - MA5:', ma(3, '15m') - ma(5, '15m'))
                 side = 'LONG'

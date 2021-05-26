@@ -785,7 +785,18 @@ def Autotrading(side):
         Autotrading(side)
 
 # 自动进行开单
-def auto_create(side):
+def auto_create(side, mod):
+    order_modes = {
+        'm1': 'MA3-MA30调转',
+        'm2': 'MA3-MA15调转，MA30差值秩序扩大',
+        'm3': 'MA3-MA15,MA30持续上涨',
+        'm4': 'MA3-MA15调转，MA30差值持续减小',
+        'm5': 'MA5-MA15调转，MA30差值秩序扩大',
+        'm6': 'MA5-MA30调转',
+        'm7': 'MA5-MA15,MA30持续上涨',
+        'm8': 'MA5-MA15调转，MA30差值持续减小'
+    }
+    order_mode = order_modes[mod]
     if side == 'SHORT':
         btc_price = bn.fetch_ticker(symbol)['last']
         order_price = int(btc_price - avg_ch('5m') * 0.382)
@@ -802,6 +813,7 @@ def auto_create(side):
         '标题：': '建立{}订单'.format(side),
         '订单ID：': auto_order,
         '成交量：': amount,
+        '订单模式': order_mode,
         '订单成交时间：': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
     }
     push_message(push_msg)
@@ -826,9 +838,11 @@ def con_sel(q_out):
             time.sleep(1200)
             if ma(3, '15m') - ma(5, '15m') > ma_15m_ch and ma_30m_ch > 0:
                 side = 'LONG'
+                mode = 'm1'
                 break
             elif ma(3, '15m') - ma(5, '15m') < 0 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
                 side = 'SHORT'
+                mode = 'm2'
                 break
             else:
                 continue
@@ -836,9 +850,11 @@ def con_sel(q_out):
             time.sleep(1200)
             if ma(3, '15m') - ma(5, '15m') > ma_15m_ch and ma(3, '30m') - ma(5, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] > close_price:
                 side = 'LONG'
+                mode = 'm3'
                 break
             elif ma(3, '15m') - ma(5, '15m') < 0 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
                 side = 'SHORT'
+                mode = 'm4'
                 break
             else:
                 continue
@@ -850,9 +866,11 @@ def con_sel(q_out):
             time.sleep(1200)
             if ma(5, '15m') - ma(3, '15m') < 0 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
                 side = 'LONG'
+                mode = 'm5'
                 break
             elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch and ma_30m_ch > 0:
                 side = 'SHORT'
+                mode = 'm6'
                 break                  
             else:
                 continue
@@ -860,15 +878,17 @@ def con_sel(q_out):
             time.sleep(1200)
             if ma(5, '15m') - ma(3, '15m') > ma_15m_ch and ma(5, '30m') - ma(3, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] < close_price:
                 side = 'SHORT'
+                mode = 'm7'
                 break
             elif ma(5, '15m') - ma(3, '15m') < 0 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
                 side = 'LONG'
+                mode = 'm8'
                 break
             else:
                 continue
     event = threading.Event()
     if side != None and not pos_status(side):
-        auto_order = auto_create(side)
+        auto_order = auto_create(side, mode)
         time.sleep(5)
         q_out.put((auto_order, side, event))
         event.set()

@@ -75,7 +75,7 @@ def avg_ch(time):
 
 
 
-pprint(bn.fetch_balance()['free'])
+# pprint(bn.fetch_balance()['free'])
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #pprint(bn.fetch_ticker('BTC/USDT')['last'])
 #pprint(bn.fetch_orders('BTC/USDT')[-3])
@@ -138,14 +138,14 @@ pprint(bn.fetch_balance()['free'])
 #     return int(su1/len(ohlcv)),int(su2/len(ohlcv))
 
 # 检测订单是否还是挂单状态
-def id_check(id):
-    open_order_id = []
-    for order in bn.fetch_open_orders(symbol):
-        open_order_id.append(order[id])
-    if id in open_order_id:
-        return True
-    else:
-        return False
+# def id_check(id):
+#     open_order_id = []
+#     for order in bn.fetch_open_orders(symbol):
+#         open_order_id.append(order[id])
+#     if id in open_order_id:
+#         return True
+#     else:
+#         return False
 
 # 开单信息写入数据库
 '''
@@ -344,7 +344,7 @@ def order_check(order_id = None):
                         if order['id'] == id:
                             db_insert(order)
         return
-    elif order_id.isdigit():
+    elif order_id.isdigit(): #判断输入的内容能否转换成数字
         order_status = bn.fetch_order_status(order_id,symbol)    # 基于id获取订单状态
         if order_id not in trade_id_list:   
     # while order_status == "open":
@@ -478,6 +478,7 @@ def create_tpsl_order(type, ratio, price, poside):
     stoppriceIsNeeded = False
     positionsideIsNeeded = False
     closepositionIsNeeded = False
+    try_count = 3
     typeList = ['STOP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
     if upperType not in typeList:
         print('订单模式错误！请重新输入！！')
@@ -525,12 +526,20 @@ def create_tpsl_order(type, ratio, price, poside):
         closePosition = True
     else:
         closePosition = False
-    the_order = bn.create_order(symbol, type, side, quantity, price, {
-        'stopPrice': stopPrice,
-        'positionSide': positionSide,
-        'closePosition': closePosition,
-        'workingType': 'MARK_PRICE'
-    })
+    while try_count > 0:
+        try:
+            the_order = bn.create_order(symbol, type, side, quantity, price, {
+                'stopPrice': stopPrice,
+                'positionSide': positionSide,
+                'closePosition': closePosition,
+                'workingType': 'MARK_PRICE'
+            })
+            break
+        except:
+            try_count -= 1
+            if try_count == 0:
+                return
+            continue    
     db_insert(the_order)
     order_check()
     return the_order['id']
@@ -659,8 +668,6 @@ def Autotrading(side):
                 limit_price = pos_price + price_step
                 trigger_price = pos_price
                 retry = 5
-                safe_nu = 1
-                safe_order_list = []
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.24 / pos_lev:
                         create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
@@ -669,7 +676,6 @@ def Autotrading(side):
                         sl_price = round(pos_price - pos_price * 0.24 / pos_lev, 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side)#24%止损单
-                            create_time = time.time()
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
@@ -682,12 +688,11 @@ def Autotrading(side):
                                     if abs(defense_price - pos_price) < 1:
                                         defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                                 if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                    try:
-                                        defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                        defense_order_list.append(defense_order)
-                                        defense_order_dict[trigger_price] = defense_order
-                                    except:
+                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    if not defense_order.isdigit():
                                         continue
+                                    defense_order_list.append(defense_order)
+                                    defense_order_dict[trigger_price] = defense_order
                                 else:
                                     time.sleep(5)
                                     continue                            
@@ -706,7 +711,6 @@ def Autotrading(side):
                         #     safe_nu += 1
                         #     create_time = time.time()
                     print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
-                    print(threading.enumerate())
                     if retry == 0:
                         time.sleep(10)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -726,7 +730,6 @@ def Autotrading(side):
                         sl_price = round(pos_price / (1 - 0.24 / pos_lev), 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #24%止损单
-                            create_time = time.time()
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
@@ -738,12 +741,11 @@ def Autotrading(side):
                                     if abs(defense_price - pos_price) < 1:
                                         defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
                                 if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
-                                    try:
-                                        defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                        defense_order_list.append(defense_order)
-                                        defense_order_dict[trigger_price] = defense_order
-                                    except:
+                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    if not defense_order.isdigit():
                                         continue
+                                    defense_order_list.append(defense_order)
+                                    defense_order_dict[trigger_price] = defense_order
                                 else:
                                     time.sleep(5)
                                     continue
@@ -758,7 +760,6 @@ def Autotrading(side):
                                     bn.cancel_order(defense_order_list[0], symbol)
                                     del defense_order_list[0]
                     print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
-                    print(threading.enumerate())
                     if retry == 0:
                         time.sleep(10)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))

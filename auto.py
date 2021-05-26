@@ -23,7 +23,7 @@ from queue import Queue
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-positions_split = 40
+positions_split = 45
 leverage = 16
 que = Queue()
 # 多进程模式下对接数据库的方式需要类似与如下类型
@@ -659,12 +659,12 @@ def Autotrading(side):
         if pos_status(side):
             print('函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             pos_lev = check_positions()[side]['pos_lev']
-            pos_price = check_positions()[side]['pos_price']
-            price_step = int(pos_price * 0.1 / pos_lev)
+            pos_price = check_positions()[side]['pos_price']            
             defense_order_dict = {}
             defense_order_list = []
             ch_5m = int(avg_ch('5m'))
             if side == 'LONG':
+                price_step = int(pos_price * 0.1 / pos_lev)
                 limit_price = pos_price + price_step
                 trigger_price = pos_price
                 retry = 5
@@ -719,6 +719,7 @@ def Autotrading(side):
                         time.sleep(5)
                         retry -= 1
             else:
+                price_step = pos_price / 1.1 * 0.1 / pos_lev
                 limit_price = pos_price - price_step
                 trigger_price = pos_price
                 retry = 5
@@ -778,6 +779,15 @@ def Autotrading(side):
                     except:
                         pass
             order_check()
+            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('trade_time', -1)]).limit(1))
+            push_msg = {
+                '标题：': '{}订单已终止'.format(side),
+                '持仓价格：': pos_price,
+                '成交价格：': trade_info[0]['trade_price'],
+                '盈亏情况：': trade_info[0]['trade_P&L'] - trade_info[0]['trade_cost'],
+                '成交时间：': trade_info[0]['trade_time']
+            }
+            push_message(push_msg)
             print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         else:
             order_check()

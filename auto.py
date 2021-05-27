@@ -616,24 +616,24 @@ def check_positions(side = None):
         
 
 # 价格追踪，输入初始持仓价格，优先设置止损位，之后使用等差数列预生成网格价格点位
-def price_auto(pos_price, side, pos_lev):
-    diff_price = avg_ch('1h')
-    if side == 'LONG':
-        sl_price = pos_price - pos_price * 0.25 / pos_lev
-        price_list = [pos_price + x * diff_price for x in range(0,10)]
-    else:
-        sl_price = pos_price / (1 - 0.25 / pos_lev)
-        price_list = [pos_price - x * diff_price for x in range(0,10)]
-    # 完成初始的价格模型
-    return sl_price, price_list
+# def price_auto(pos_price, side, pos_lev):
+#     diff_price = avg_ch('1h')
+#     if side == 'LONG':
+#         sl_price = pos_price - pos_price * 0.25 / pos_lev
+#         price_list = [pos_price + x * diff_price for x in range(0,10)]
+#     else:
+#         sl_price = pos_price / (1 - 0.25 / pos_lev)
+#         price_list = [pos_price - x * diff_price for x in range(0,10)]
+#     # 完成初始的价格模型
+#     return sl_price, price_list
 
-def mesh_price(pos_price,side):
-    price_step = avg_ch('5m')
-    if side == 'LONG':
-        mesh_price = pos_price + price_step
-    else:
-        mesh_price = pos_price - price_step
-    return mesh_price
+# def mesh_price(pos_price,side):
+#     price_step = avg_ch('5m')
+#     if side == 'LONG':
+#         mesh_price = pos_price + price_step
+#     else:
+#         mesh_price = pos_price - price_step
+#     return mesh_price
 
 # 基于push plus的推送功能    
 def push_message(msg):
@@ -662,7 +662,6 @@ def Autotrading(side):
             pos_price = check_positions()[side]['pos_price']            
             defense_order_dict = {}
             defense_order_list = []
-            ch_5m = int(avg_ch('5m'))
             if side == 'LONG':
                 price_step = int(pos_price * 0.1 / pos_lev)
                 limit_price = pos_price + price_step
@@ -929,7 +928,7 @@ def Autoorders():
                 side = 'LONG'
                 if side not in [nm.getName() for nm in threading.enumerate()]:
                     threading.Thread(target = con_sel, args = (que,), name = side).start()
-                    threading.Thread(target = th_create, args = (que,)).start()
+                    threading.Thread(target = th_create, args = (que,), name = side + ' '+ str(time.strftime('%H:%M:%S', time.localtime(time.time())))).start()
                     time.sleep(60)
                     print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))) 
                 else:
@@ -975,7 +974,7 @@ def Autoorders():
                 side = 'SHORT'
                 if side not in [nm.getName() for nm in threading.enumerate()]:
                     threading.Thread(target = con_sel, args = (que,), name = side).start()
-                    threading.Thread(target = th_create, args = (que,)).start()
+                    threading.Thread(target = th_create, args = (que,), name = side + ' '+ str(time.strftime('%H:%M:%S', time.localtime(time.time())))).start()
                     time.sleep(60)
                     print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                 else:

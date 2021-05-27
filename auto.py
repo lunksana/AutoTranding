@@ -695,6 +695,10 @@ def Autotrading(side):
                                         continue
                                     defense_order_list.append(defense_order)
                                     defense_order_dict[trigger_price] = defense_order
+                                    if len(defense_order_list) > 3:
+                                        bn.cancel_order(defense_order_list[0], symbol)
+                                        print('挂单{}已被取消！'.format(defense_order_list[0])) 
+                                        del defense_order_list[0]
                                 else:
                                     time.sleep(5)
                                     continue                            
@@ -705,9 +709,6 @@ def Autotrading(side):
                                 else:
                                     limit_price += price_step
                                 trigger_price = limit_price - price_step
-                                if len(defense_order_list) > 3:
-                                    bn.cancel_order(defense_order_list[0], symbol)
-                                    del defense_order_list[0]
                         # elif bn.fetch_ticker(symbol)['last'] < pos_price and time.time() - create_time > 600 and not db_search(side, int(pos_price - pos_price * 0.12 / pos_lev)):
                         #     safe_order_list.append(create_tpsl_order('STOP', 1, round(pos_price - pos_price * (0.24 - 0.02 * safe_nu) / pos_lev, 2)))
                         #     safe_nu += 1
@@ -751,6 +752,10 @@ def Autotrading(side):
                                         continue
                                     defense_order_list.append(defense_order)
                                     defense_order_dict[trigger_price] = defense_order
+                                    if len(defense_order_list) > 3:
+                                        bn.cancel_order(defense_order_list[0], symbol)
+                                        print('挂单{}已被取消！'.format(defense_order_list[0]))
+                                        del defense_order_list[0]
                                 else:
                                     time.sleep(5)
                                     continue
@@ -761,9 +766,6 @@ def Autotrading(side):
                                 else:
                                     limit_price -= price_step
                                 trigger_price = limit_price + price_step
-                                if len(defense_order_list) > 3:
-                                    bn.cancel_order(defense_order_list[0], symbol)
-                                    del defense_order_list[0]
                     print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
                         time.sleep(10)
@@ -851,11 +853,11 @@ def con_sel(q_out):
         ma_30m_ch = ma(3, '30m') - ma(5, '30m')
         if ma_30m_ch < 0:
             time.sleep(1200)
-            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch and ma_30m_ch > 0:
+            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > 64:
                 side = 'LONG'
                 mode = 'm1'
                 break
-            elif ma(3, '15m') - ma(5, '15m') < 0 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
+            elif ma(3, '15m') - ma(5, '15m') < -60 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
                 side = 'SHORT'
                 mode = 'm2'
                 break
@@ -863,11 +865,11 @@ def con_sel(q_out):
                 continue
         else:
             time.sleep(1200)
-            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch and ma(3, '30m') - ma(5, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] > close_price:
+            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] > close_price:
                 side = 'LONG'
                 mode = 'm3'
                 break
-            elif ma(3, '15m') - ma(5, '15m') < 0 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
+            elif ma(3, '15m') - ma(5, '15m') < -60 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
                 side = 'SHORT'
                 mode = 'm4'
                 break
@@ -879,11 +881,11 @@ def con_sel(q_out):
         ma_15m_ch = ma(5, '15m') - ma(3, '15m')
         if ma_30m_ch < 0:
             time.sleep(1200)
-            if ma(5, '15m') - ma(3, '15m') < 0 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
+            if ma(5, '15m') - ma(3, '15m') < -60 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
                 side = 'LONG'
                 mode = 'm5'
                 break
-            elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch and ma_30m_ch > 0:
+            elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > 64:
                 side = 'SHORT'
                 mode = 'm6'
                 break                  
@@ -891,11 +893,11 @@ def con_sel(q_out):
                 continue
         else:
             time.sleep(1200)
-            if ma(5, '15m') - ma(3, '15m') > ma_15m_ch and ma(5, '30m') - ma(3, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] < close_price:
+            if ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] < close_price:
                 side = 'SHORT'
                 mode = 'm7'
                 break
-            elif ma(5, '15m') - ma(3, '15m') < 0 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
+            elif ma(5, '15m') - ma(3, '15m') < -60 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
                 side = 'LONG'
                 mode = 'm8'
                 break
@@ -1111,7 +1113,24 @@ if __name__ == '__main__':
 #     'orderId': '20206699237',
 #     'symbol': 'BTCUSDT'
 #     }))
-#%%
-def n_pt(nu):
-    pt = 0.03 + 0.04 * nu
-    pt2 = pt + 0.04 * nu
+# ol = bn.fetch_ohlcv(symbol, '30m', limit = 48)
+# # for i in range(0,4):
+# #     print(ma(3, '15m') - ma(5, '15m'))
+# #     time.sleep(900)
+# def mab(ma1, ma2, data):
+#     max_ma = max(ma1, ma2)
+#     ma_ch = []
+#     sum = 0
+#     for i in range(max_ma, len(data)):
+#         ma1sum = 0
+#         ma2sum = 0
+#         for a in data[(i - ma1): i]:
+#             ma1sum += a[4]
+#         for b in data[(i - ma2): i]:
+#             ma2sum += b[4]
+#         ma_ch.append(ma1sum / ma1 - ma2sum / ma2)
+#     for j in ma_ch:
+#         sum += abs(j)
+#     return sum / len(data)
+
+# print(mab(3,5,ol))

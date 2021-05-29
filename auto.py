@@ -515,13 +515,17 @@ def create_tpsl_order(type, ratio, price, poside):
             print('订单数量超过范围！')
             return
         else:
-            quantity = abs(round((float(position['positionAmt']) * ratio),3)) #持仓取正
+            quantity = abs(round((float(position['positionAmt']) * ratio), 3)) #持仓取正
             # 保留三位小数
             if quantity == 0:
                 print('数值太小！')
                 return
     if priceIsNeeded or stoppriceIsNeeded:
-        stopPrice = price
+        if not price.isdigit():
+            print('必须输入价格！')
+            return
+        else:
+            stopPrice = price
     if closepositionIsNeeded:
         closePosition = True
     else:
@@ -1054,8 +1058,14 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    Autoorders()
-
+    #Autoorders()
+    bn.create_order(symbol, 'STOP_MARKET', 'SHORT', , price, {
+                'stopPrice': stopPrice,
+                'positionSide': positionSide,
+                'closePosition': closePosition,
+                'workingType': 'MARK_PRICE'
+            })
+    
     
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))

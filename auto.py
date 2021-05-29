@@ -673,7 +673,7 @@ def Autotrading(side):
                 retry = 5
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.24 / pos_lev:
-                        create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
+                        create_tpsl_order('STOP_MARKET', None, bn.fetch_ticker(symbol)['last'], side) #快速止损
                         break
                     else:
                         sl_price = round(pos_price - pos_price * 0.24 / pos_lev, 2)
@@ -731,7 +731,7 @@ def Autotrading(side):
                 retry = 5
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.24 / pos_lev):
-                        create_tpsl_order('STOP_MARKET', None, None, side) #快速止损
+                        create_tpsl_order('STOP_MARKET', None, bn.fetch_ticker(symbol)['last'], side) #快速止损
                         break
                     else:
                         sl_price = round(pos_price / (1 - 0.24 / pos_lev), 2)
@@ -1058,15 +1058,7 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    #Autoorders()
-    bn.create_order(symbol, 'STOP_MARKET', 'SHORT', , price, {
-                'stopPrice': stopPrice,
-                'positionSide': positionSide,
-                'closePosition': closePosition,
-                'workingType': 'MARK_PRICE'
-            })
-    
-    
+    Autoorders()
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #print(ma(5,'1h'))

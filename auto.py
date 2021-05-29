@@ -856,11 +856,11 @@ def con_sel(q_out):
         ma_30m_ch = ma(3, '30m') - ma(5, '30m')
         if ma_30m_ch < 0:
             time.sleep(1200)
-            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 60 and ma(3, '30m') - ma(5, '30m') > 0:
+            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > 30:
                 side = 'LONG'
                 mode = 'm1'
                 break
-            elif ma(3, '15m') - ma(5, '15m') < -90 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
+            elif ma(3, '15m') - ma(5, '15m') < -60 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
                 side = 'SHORT'
                 mode = 'm2'
                 break
@@ -868,11 +868,11 @@ def con_sel(q_out):
                 continue
         else:
             time.sleep(1200)
-            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 60 and ma(3, '30m') - ma(5, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] > close_price:
+            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > ma_30m_ch + 30 and bn.fetch_ticker(symbol)['last'] > close_price:
                 side = 'LONG'
                 mode = 'm3'
                 break
-            elif ma(3, '15m') - ma(5, '15m') < -90 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch:
+            elif ma(3, '15m') - ma(5, '15m') < -60 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
                 side = 'SHORT'
                 mode = 'm4'
                 break
@@ -884,11 +884,11 @@ def con_sel(q_out):
         ma_15m_ch = ma(5, '15m') - ma(3, '15m')
         if ma_30m_ch < 0:
             time.sleep(1200)
-            if ma(5, '15m') - ma(3, '15m') < -90 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
+            if ma(5, '15m') - ma(3, '15m') < -60 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch -30:
                 side = 'LONG'
                 mode = 'm5'
                 break
-            elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 60 and ma(5, '30m') - ma(3, '30m') > 0:
+            elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > 30:
                 side = 'SHORT'
                 mode = 'm6'
                 break                  
@@ -896,11 +896,11 @@ def con_sel(q_out):
                 continue
         else:
             time.sleep(1200)
-            if ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 60 and ma(5, '30m') - ma(3, '30m') > ma_30m_ch and bn.fetch_ticker(symbol)['last'] < close_price:
+            if ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > ma_30m_ch + 30 and bn.fetch_ticker(symbol)['last'] < close_price:
                 side = 'SHORT'
                 mode = 'm7'
                 break
-            elif ma(5, '15m') - ma(3, '15m') < -90 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch:
+            elif ma(5, '15m') - ma(3, '15m') < -60 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch - 30:
                 side = 'LONG'
                 mode = 'm8'
                 break

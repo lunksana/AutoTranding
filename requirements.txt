@@ -6,4 +6,4 @@ six
 schedule
 APScheduler
 bybit
-websocket
+websocket-client

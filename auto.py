@@ -522,11 +522,12 @@ def create_tpsl_order(type, ratio, price, poside):
                 print('数值太小！')
                 return
     if priceIsNeeded or stoppriceIsNeeded:
-        # if not str(price).isdigit():
-        #     print('必须输入价格！')
-        #     return
-        # else:
-        stopPrice = price
+        value = re.compile(r'^[0-9]+\.?[0-9]+$')
+        if value.match(price):
+            stopPrice = price
+        else:
+            print('价格输入异常！')
+            return
     if closepositionIsNeeded:
         closePosition = True
     else:
@@ -863,7 +864,7 @@ def con_sel(q_out):
                 side = 'LONG'
                 mode = 'm1'
                 break
-            elif ma(3, '15m') - ma(5, '15m') < -60 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
+            elif ma(3, '15m') - ma(5, '15m') < -30 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
                 side = 'SHORT'
                 mode = 'm2'
                 break
@@ -875,7 +876,7 @@ def con_sel(q_out):
                 side = 'LONG'
                 mode = 'm3'
                 break
-            elif ma(3, '15m') - ma(5, '15m') < -60 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
+            elif ma(3, '15m') - ma(5, '15m') < -30 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
                 side = 'SHORT'
                 mode = 'm4'
                 break
@@ -887,7 +888,7 @@ def con_sel(q_out):
         ma_15m_ch = ma(5, '15m') - ma(3, '15m')
         if ma_30m_ch < 0:
             time.sleep(1200)
-            if ma(5, '15m') - ma(3, '15m') < -60 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch -30:
+            if ma(5, '15m') - ma(3, '15m') < -30 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch -30:
                 side = 'LONG'
                 mode = 'm5'
                 break
@@ -903,7 +904,7 @@ def con_sel(q_out):
                 side = 'SHORT'
                 mode = 'm7'
                 break
-            elif ma(5, '15m') - ma(3, '15m') < -60 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch - 30:
+            elif ma(5, '15m') - ma(3, '15m') < -30 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch - 30:
                 side = 'LONG'
                 mode = 'm8'
                 break

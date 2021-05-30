@@ -50,7 +50,7 @@ funds_col = db['funds']
 
 FORMAT = '%(asctime)s %(levename)s %(message)s'
 DATEFMT = '%Y-%m-%d %H:%M:%S'
-logging.basicConfig(level = logging.DEBUG, filename = 'btc_script.log', filemode = 'a', format = FORMAT, datefmt = DATEFMT)
+logging.basicConfig(level = logging.ERROR, filename = 'btc_script.log', filemode = 'a', format = FORMAT, datefmt = DATEFMT)
 
 
 bn = ccxt.binance({
@@ -934,7 +934,7 @@ def Autoorders():
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             break
         else:
-            logging.debug('线程情况：', threading.enumerate())
+            logging.error('线程情况：', threading.enumerate())
             pprint(threading.enumerate())
             print(bn.fetch_ticker(symbol)['last'])
             if ma(3, '15m') - ma(5, '15m') > 0:

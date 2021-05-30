@@ -14,6 +14,7 @@ import threading
 import userapi
 import requests
 import json
+import re
 import logging
 #from concurrent.futures import ThreadPoolExecutor, as_completed
 #from multiprocessing import Process 
@@ -521,11 +522,11 @@ def create_tpsl_order(type, ratio, price, poside):
                 print('数值太小！')
                 return
     if priceIsNeeded or stoppriceIsNeeded:
-        if not price.isdigit():
-            print('必须输入价格！')
-            return
-        else:
-            stopPrice = price
+        # if not str(price).isdigit():
+        #     print('必须输入价格！')
+        #     return
+        # else:
+        stopPrice = price
     if closepositionIsNeeded:
         closePosition = True
     else:
@@ -538,8 +539,10 @@ def create_tpsl_order(type, ratio, price, poside):
                 'closePosition': closePosition,
                 'workingType': 'MARK_PRICE'
             })
+            print('订单成功执行！')
             break
         except:
+            print('订单执行异常，重试中！')
             try_count -= 1
             if try_count == 0:
                 return
@@ -673,7 +676,7 @@ def Autotrading(side):
                 retry = 5
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.24 / pos_lev:
-                        create_tpsl_order('STOP_MARKET', None, bn.fetch_ticker(symbol)['last'], side) #快速止损
+                        create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
                         sl_price = round(pos_price - pos_price * 0.24 / pos_lev, 2)
@@ -731,7 +734,7 @@ def Autotrading(side):
                 retry = 5
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.24 / pos_lev):
-                        create_tpsl_order('STOP_MARKET', None, bn.fetch_ticker(symbol)['last'], side) #快速止损
+                        create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
                         sl_price = round(pos_price / (1 - 0.24 / pos_lev), 2)

@@ -48,6 +48,11 @@ order_col = db['orders']
 trade_col = db['trades']
 funds_col = db['funds']
 
+FORMAT = '%(asctime)s %(levename)s %(message)s'
+DATEFMT = '%Y-%m-%d %H:%M:%S'
+logging.basicConfig(level = logging.DEBUG, filename = 'btc_script.log', filemode = 'a', format = FORMAT, datefmt = DATEFMT)
+
+
 bn = ccxt.binance({
     'enableRateLimit': True,
     'options': {
@@ -687,7 +692,7 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
                                 adj_value = round((trigger_price - pos_price) / price_step) -1
-                                pt = 0.03 + 0.0175 * adj_value * (adj_value + 1)
+                                pt = 0.03 + 0.02 * adj_value * (adj_value + 1)
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.12 / pos_lev)                                 
                                 else:
@@ -745,7 +750,7 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
                                 adj_value = round((pos_price - trigger_price) / price_step) - 1
-                                pt = 0.03 + 0.0175 * adj_value * (adj_value + 1)
+                                pt = 0.03 + 0.02 * adj_value * (adj_value + 1)
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.12 / pos_lev))                                 
                                 else:
@@ -929,6 +934,7 @@ def Autoorders():
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             break
         else:
+            logging.debug('线程情况：', threading.enumerate())
             pprint(threading.enumerate())
             print(bn.fetch_ticker(symbol)['last'])
             if ma(3, '15m') - ma(5, '15m') > 0:

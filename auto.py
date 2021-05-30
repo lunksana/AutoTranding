@@ -1062,7 +1062,7 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    Autotrading('LONG')
+    Autoorders()
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #print(ma(5,'1h'))

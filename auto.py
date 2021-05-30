@@ -523,7 +523,7 @@ def create_tpsl_order(type, ratio, price, poside):
                 return
     if priceIsNeeded or stoppriceIsNeeded:
         value = re.compile(r'^[0-9]+\.?[0-9]+$')
-        if value.match(price):
+        if value.match(str(price)):
             stopPrice = price
         else:
             print('价格输入异常！')
@@ -1062,7 +1062,7 @@ if __name__ == '__main__':
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
     print('1h:',avg_ch('1h'))
-    Autoorders()
+    Autotrading('LONG')
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #print(ma(5,'1h'))
@@ -1097,7 +1097,7 @@ if __name__ == '__main__':
 
 #pprint(positions_info(fetch_positions(symbol)))
 #pprint(bn.fetch_my_trades(symbol,limit=1))
-#pprint(create_tpsl_order('TAKE_PROFIT', 0.2, 61000, 'LONG'))
+#pprint(create_tpsl_order('STOP', 1, 34900, 'LONG'))
 #pprint(bn.fetch_open_orders(symbol))
 #pprint(bn.fetch_orders(symbol,limit=4))
 #pprint(len([x['id'] for x in bn.fetch_orders(symbol)]))

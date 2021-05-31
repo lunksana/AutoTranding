@@ -949,7 +949,7 @@ def Autoorders():
     print('主函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     ch_lev(leverage)
     while 1:
-        if bn.fetch_free_balance()['USDT'] <= 260:
+        if bn.fetch_free_balance()['USDT'] <= 250:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             break
         else:

@@ -1071,8 +1071,10 @@ def main():
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             return
         else:
-            main_thread = threading.Thread(target = Autoorders)
+            main_thread = threading.Thread(target = Autoorders, name = 'Main_Th '+ time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            price_thread = threading.Thread(target = price_now)
             main_thread.start()
+            price_thread.start()
             main_thread.join()
         
 if __name__ == '__main__':

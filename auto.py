@@ -1066,21 +1066,14 @@ def loop(function, fun_args = None):
     
 def main():
     order_check()
-    th_order = threading.Thread(target = Autoorders)
-    th_price = threading.Thread(target = price_now)
     while True:
         if bn.fetch_free_balance(symbol)['USDT'] <= 200:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             return
-        if not th_order.is_alive():
-            try:
-                th_order.start()
-                th_price.start()
-                th_order.join()
-                th_price.join()
-            except:
-                time.sleep(60)
-                continue
+        else:
+            main_thread = threading.Thread(target = Autoorders)
+            main_thread.start()
+            main_thread.join()
         
 if __name__ == '__main__':
     print('5m:',avg_ch('5m'))

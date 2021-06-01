@@ -1159,19 +1159,25 @@ if __name__ == '__main__':
 #     return sum / len(data)
 
 #print(mab(3,5,ol))
-ohl = bn.fetch_ohlcv(symbol, '15m', limit = 3)
+ohl = bn.fetch_ohlcv(symbol, '15m')
 k_list = []
-for i in ohl:
-    if i[1] > i[4]:
-        high_ch = i[2] - i[1]
-        low_ch = i[4] - i[3]
+for i,j in zip(range(0, len(ohl) - 1), range(1, len(ohl))):
+    if ohl[i][4] > ohl[i][1] and ohl[j][1] > ohl[j][4] and abs(ohl[i][4] - ohl[j][1]) < 1:
         side = 'SHORT'
-    else:
-        high_ch = i[2] - i[4]
-        low_ch = i[1] - i[3]
+        print(i,j,time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[i][0] / 1000)), side)
+    elif ohl[i][1] > ohl[i][4] and ohl[j][4] > ohl[j][1] and abs(ohl[i][4] - ohl[j][1]) < 1:
         side = 'LONG'
-    k_list.append([high_ch, low_ch, side])
-print(k_list)
+        print(i,j,time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[i][0] / 1000)), side)
+# for i in ohl:
+#     if i[1] > i[4]:
+#         high_ch = i[2] - i[1]
+#         low_ch = i[4] - i[3]
+#         side = 'SHORT'
+#     else:
+#         high_ch = i[2] - i[4]
+#         low_ch = i[1] - i[3]
+#         side = 'LONG'
+#     k_list.append([high_ch, low_ch, side])
 
 # 计划，每隔十五分钟运行一次，如果出现一个long和一个short的组合，并且存在比较长的引线，之后再根据后续的实时价格进行开单操作，开单之后调整止损比例，初始止盈比例及价格差逐步
 # 上升，初始建议为0.6

@@ -1182,14 +1182,37 @@ if __name__ == '__main__':
 # 上升，初始建议为0.6
 
 def sel_side():
-    ohl = bn.fetch_ohlcv(symbol, '15m', limit = 3)
+    ohl = bn.fetch_ohlcv(symbol, '15m')
     for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
         if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
             side = 'SHORT'
-            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
         elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
             side = 'LONG' 
-            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
     return side
 
-
+ohl = bn.fetch_ohlcv(symbol, '15m')
+list1 = []
+list2 = []
+for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
+    side = None
+    if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
+        side = 'SHORT'
+    elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
+        side = 'LONG'
+    high_ch = ohl[z][2] - ohl[z][1]
+    low_ch = ohl[z][1] - ohl[z][3]
+    if side != None:
+        if side == 'LONG' and high_ch > low_ch >= 0:
+            price_ch = high_ch - low_ch
+        elif side == 'SHORT' and low_ch > high_ch >= 0:
+            price_ch = low_ch - high_ch
+        list1.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, price_ch])
+    if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ma(3, '15m') < ma(5, '15m'):
+        side = 'SHORT'
+        list2.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side])
+    elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ma(3, '15m') > ma(5, '15m'):
+        side = 'LONG'
+        list2.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side])
+print(len(list1), len(list2))

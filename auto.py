@@ -20,10 +20,12 @@ import logging
 #from multiprocessing import Process 
 from pprint import pprint
 from queue import Queue
+from apscheduler.schedulers.blocking import BlockingScheduler
 #from cyberbrain import trace
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
+sched = BlockingScheduler()
 positions_split = 45
 leverage = 16
 que = Queue()
@@ -1192,27 +1194,32 @@ def sel_side():
             print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
     return side
 
-ohl = bn.fetch_ohlcv(symbol, '15m')
-list1 = []
-list2 = []
-for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
-    side = None
-    if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
-        side = 'SHORT'
-    elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
-        side = 'LONG'
-    high_ch = ohl[z][2] - ohl[z][1]
-    low_ch = ohl[z][1] - ohl[z][3]
-    if side != None:
-        if side == 'LONG' and high_ch > low_ch >= 0:
-            price_ch = high_ch - low_ch
-        elif side == 'SHORT' and low_ch > high_ch >= 0:
-            price_ch = low_ch - high_ch
-        list1.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, price_ch])
-    if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ma(3, '15m') < ma(5, '15m'):
-        side = 'SHORT'
-        list2.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side])
-    elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ma(3, '15m') > ma(5, '15m'):
-        side = 'LONG'
-        list2.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side])
-print(len(list1), len(list2))
+# ohl = bn.fetch_ohlcv(symbol, '15m',since = 1622649600000)
+# list1 = []
+# list2 = []
+# for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
+#     side = None
+#     if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
+#         side = 'SHORT'
+#     elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
+#         side = 'LONG'
+#     high_ch = ohl[z][2] - ohl[z][1]
+#     low_ch = ohl[z][1] - ohl[z][3]
+#     if side != None:
+#         if side == 'LONG' and high_ch > low_ch >= 0:
+#             price_ch = high_ch - low_ch
+#         elif side == 'SHORT' and low_ch > high_ch >= 0:
+#             price_ch = low_ch - high_ch
+#         list1.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, price_ch])
+#     if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1:
+#         side = 'SHORT'
+#         list2.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side])
+#     elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1:
+#         side = 'LONG'
+#         list2.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side])
+# print(len(list1), len(list2))
+def sched_test():
+    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+
+sched.add_job(sched_test, 'interval', seconds = 5)
+sched.start()

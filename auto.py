@@ -677,7 +677,8 @@ def auto_create(side, mod):
         'm6': 'MA5-MA30调转',
         'm7': 'MA5-MA15,MA30持续上涨',
         'm8': 'MA5-MA15调转，MA30差值持续减小',
-        'm9': '反向开单'
+        'm9': '反向开单',
+        'm10': 'K线调转'
     }
     order_mode = order_modes[mod]
     if side == 'SHORT':
@@ -877,65 +878,19 @@ def th_create(q_in):
     else:
         return
 
-# 使用event.wait()作为线程等待，当子线程执行event.set()之后即停止阻塞，实现了线程相应
-def con_sel(q_out):
+# 获取方向
+def get_side(q_out):
+    ohl = bn.fetch_ohlcv(symbol, '15m', limit = 3)
     side = None
-    while ma(3, '15m') - ma(5, '15m') > 0:
-        close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-        ma_15m_ch = ma(3, '15m') - ma(5, '15m')
-        ma_30m_ch = ma(3, '30m') - ma(5, '30m')
-        if ma_30m_ch < 0:
-            time.sleep(1200)
-            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > 30:
-                side = 'LONG'
-                mode = 'm1'
-                break
-            elif ma(3, '15m') - ma(5, '15m') < -30 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
-                side = 'SHORT'
-                mode = 'm2'
-                break
-            else:
-                continue
-        else:
-            time.sleep(1200)
-            if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > ma_30m_ch + 30 and bn.fetch_ticker(symbol)['last'] > close_price:
-                side = 'LONG'
-                mode = 'm3'
-                break
-            elif ma(3, '15m') - ma(5, '15m') < -30 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
-                side = 'SHORT'
-                mode = 'm4'
-                break
-            else:
-                continue
-    while ma(5, '15m') - ma(3, '15m') > 0:
-        close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
-        ma_30m_ch = ma(5, '30m') - ma(3, '30m')
-        ma_15m_ch = ma(5, '15m') - ma(3, '15m')
-        if ma_30m_ch < 0:
-            time.sleep(1200)
-            if ma(5, '15m') - ma(3, '15m') < -30 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch -30:
-                side = 'LONG'
-                mode = 'm5'
-                break
-            elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > 30:
-                side = 'SHORT'
-                mode = 'm6'
-                break                  
-            else:
-                continue
-        else:
-            time.sleep(1200)
-            if ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > ma_30m_ch + 30 and bn.fetch_ticker(symbol)['last'] < close_price:
-                side = 'SHORT'
-                mode = 'm7'
-                break
-            elif ma(5, '15m') - ma(3, '15m') < -30 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch - 30:
-                side = 'LONG'
-                mode = 'm8'
-                break
-            else:
-                continue
+    for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
+        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
+            side = 'SHORT'
+            mode = 'm10'
+            # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
+        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
+            side = 'LONG' 
+            mode = 'm10'
+            # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
     event = threading.Event()
     if side != None and not pos_status(side):
         auto_order = auto_create(side, mode)
@@ -946,6 +901,77 @@ def con_sel(q_out):
         q_out.put((None, side, event))
         event.set()
         return
+
+
+# 使用event.wait()作为线程等待，当子线程执行event.set()之后即停止阻塞，实现了线程相应
+# def con_sel(q_out):
+#     side = None
+#     while ma(3, '15m') - ma(5, '15m') > 0:
+#         close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+#         ma_15m_ch = ma(3, '15m') - ma(5, '15m')
+#         ma_30m_ch = ma(3, '30m') - ma(5, '30m')
+#         if ma_30m_ch < 0:
+#             time.sleep(1200)
+#             if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > 30:
+#                 side = 'LONG'
+#                 mode = 'm1'
+#                 break
+#             elif ma(3, '15m') - ma(5, '15m') < -30 and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
+#                 side = 'SHORT'
+#                 mode = 'm2'
+#                 break
+#             else:
+#                 continue
+#         else:
+#             time.sleep(1200)
+#             if ma(3, '15m') - ma(5, '15m') > ma_15m_ch + 30 and ma(3, '30m') - ma(5, '30m') > ma_30m_ch + 30 and bn.fetch_ticker(symbol)['last'] > close_price:
+#                 side = 'LONG'
+#                 mode = 'm3'
+#                 break
+#             elif ma(3, '15m') - ma(5, '15m') < -30 and bn.fetch_ticker(symbol)['last'] < close_price and ma(3, '30m') - ma(5, '30m') < ma_30m_ch - 30:
+#                 side = 'SHORT'
+#                 mode = 'm4'
+#                 break
+#             else:
+#                 continue
+#     while ma(5, '15m') - ma(3, '15m') > 0:
+#         close_price = bn.fetch_ohlcv(symbol, '15m', limit = 1)[0][4]
+#         ma_30m_ch = ma(5, '30m') - ma(3, '30m')
+#         ma_15m_ch = ma(5, '15m') - ma(3, '15m')
+#         if ma_30m_ch < 0:
+#             time.sleep(1200)
+#             if ma(5, '15m') - ma(3, '15m') < -30 and ma(5, '30m') - ma(3, '30m') < ma_30m_ch -30:
+#                 side = 'LONG'
+#                 mode = 'm5'
+#                 break
+#             elif ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > 30:
+#                 side = 'SHORT'
+#                 mode = 'm6'
+#                 break                  
+#             else:
+#                 continue
+#         else:
+#             time.sleep(1200)
+#             if ma(5, '15m') - ma(3, '15m') > ma_15m_ch + 30 and ma(5, '30m') - ma(3, '30m') > ma_30m_ch + 30 and bn.fetch_ticker(symbol)['last'] < close_price:
+#                 side = 'SHORT'
+#                 mode = 'm7'
+#                 break
+#             elif ma(5, '15m') - ma(3, '15m') < -30 and bn.fetch_ticker(symbol)['last'] > close_price and ma(5, '30m') - ma(3, '30m') < ma_30m_ch - 30:
+#                 side = 'LONG'
+#                 mode = 'm8'
+#                 break
+#             else:
+#                 continue
+#     event = threading.Event()
+#     if side != None and not pos_status(side):
+#         auto_order = auto_create(side, mode)
+#         time.sleep(5)
+#         q_out.put((auto_order, side, event))
+#         event.set()
+#     else:
+#         q_out.put((None, side, event))
+#         event.set()
+#         return
     
 def Autoorders():
     print('主函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -962,7 +988,7 @@ def Autoorders():
                 print('MA3 - MA5:', ma(3, '15m') - ma(5, '15m'))
                 side = 'LONG'
                 if side not in [nm.getName() for nm in threading.enumerate()]:
-                    threading.Thread(target = con_sel, args = (que,), name = side).start()
+                    threading.Thread(target = get_side, args = (que,), name = side).start()
                     threading.Thread(target = th_create, args = (que,), name = side + ' '+ str(time.strftime('%H:%M:%S', time.localtime(time.time())))).start()
                     time.sleep(60)
                     print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))) 
@@ -1008,7 +1034,7 @@ def Autoorders():
                 print('MA5 - MA3:', ma(5, '15m') - ma(3, '15m'))
                 side = 'SHORT'
                 if side not in [nm.getName() for nm in threading.enumerate()]:
-                    threading.Thread(target = con_sel, args = (que,), name = side).start()
+                    threading.Thread(target = get_side, args = (que,), name = side).start()
                     threading.Thread(target = th_create, args = (que,), name = side + ' '+ str(time.strftime('%H:%M:%S', time.localtime(time.time())))).start()
                     time.sleep(60)
                     print('{}模式终止时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -1068,23 +1094,23 @@ def loop(function, fun_args = None):
     
 def main():
     order_check()
-    while True:
+    while 1:
         if bn.fetch_free_balance(symbol)['USDT'] <= 200:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             return
         else:
-            main_thread = threading.Thread(target = Autoorders, name = 'Main_Th '+ time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-            price_thread = threading.Thread(target = price_now)
-            main_thread.start()
-            price_thread.start()
-            main_thread.join()
+            threading.Thread(target = th_create, args = (que,), name = 'create_th' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))).start()
+            sched.add_job(main, 'cron', args = (que,), minute = '1/15', name = 'Main_Th '+ time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            sched.start()
         
 if __name__ == '__main__':
-    print('5m:',avg_ch('5m'))
+    # print('5m:',avg_ch('5m'))
     print('15m:',avg_ch('15m'))
     print('30m:',avg_ch('30m'))
-    print('1h:',avg_ch('1h'))
-    #Autoorders()
+    # print('1h:',avg_ch('1h'))
+    # Autoorders()
+    main()
+    print(threading.enumerate())
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #print(ma(5,'1h'))
@@ -1183,16 +1209,7 @@ if __name__ == '__main__':
 # 计划，每隔十五分钟运行一次，如果出现一个long和一个short的组合，并且存在比较长的引线，之后再根据后续的实时价格进行开单操作，开单之后调整止损比例，初始止盈比例及价格差逐步
 # 上升，初始建议为0.6
 
-def sel_side():
-    ohl = bn.fetch_ohlcv(symbol, '15m')
-    for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
-        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
-            side = 'SHORT'
-            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
-        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
-            side = 'LONG' 
-            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
-    return side
+
 
 # ohl = bn.fetch_ohlcv(symbol, '15m',since = 1622649600000)
 # list1 = []
@@ -1218,8 +1235,9 @@ def sel_side():
 #         side = 'LONG'
 #         list2.append([time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side])
 # print(len(list1), len(list2))
-def sched_test():
-    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+# def sched_test():
+#     print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
 
-sched.add_job(sched_test, 'interval', seconds = 5)
-sched.start()
+# sched.add_job(sched_test, 'cron', second = '5/10')
+# sched.start()
+# sched.get_jobs()

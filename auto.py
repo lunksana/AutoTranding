@@ -1095,12 +1095,14 @@ def loop(function, fun_args = None):
 def main():
     order_check()
     while 1:
-        if bn.fetch_free_balance(symbol)['USDT'] <= 200:
+        if bn.fetch_free_balance()['USDT'] <= 200:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             return
         else:
             threading.Thread(target = th_create, args = (que,), name = 'create_th' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))).start()
-            sched.add_job(main, 'cron', args = (que,), minute = '1/15', name = 'Main_Th '+ time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            sched.add_job(get_side, 'cron', args = (que,), minute = '1/15', name = 'Main_Th '+ time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            print(threading.enumerate())
+            sched.get_jobs()
             sched.start()
         
 if __name__ == '__main__':
@@ -1110,7 +1112,7 @@ if __name__ == '__main__':
     # print('1h:',avg_ch('1h'))
     # Autoorders()
     main()
-    print(threading.enumerate())
+    
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #print(ma(5,'1h'))

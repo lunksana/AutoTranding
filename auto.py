@@ -1255,17 +1255,16 @@ if __name__ == '__main__':
 # sched.start()
 # sched.get_jobs()
 def test_k():
-    while 1:
-        ohl = bn.fetch_ohlcv(symbol, '15m', limit = 3)
-        for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
-            if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
-                side = 'SHORT'
-                if ohl[x][2] - ohl[x][4] > ohl[x][4] - ohl[x][1] or ohl[y][2] - ohl[y][1] > ohl[y][1] - ohl[y][4]:
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
-            elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
-                side = 'LONG'
-                if ohl[x][4] - ohl[x][3] > ohl[x][1] - ohl[x][4] or ohl[y][1] - ohl[y][3] > ohl[y][4] - ohl[y][1]:
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+    ohl = bn.fetch_ohlcv(symbol, '15m', limit = 3)
+    for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
+        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
+            side = 'SHORT'
+            if ohl[x][2] - ohl[x][4] > ohl[x][4] - ohl[x][1] or ohl[y][2] - ohl[y][1] > ohl[y][1] - ohl[y][4]:
+                print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
+            side = 'LONG'
+            if ohl[x][4] - ohl[x][3] > ohl[x][1] - ohl[x][4] or ohl[y][1] - ohl[y][3] > ohl[y][4] - ohl[y][1]:
+                print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
 
 sched.add_job(test_k, 'cron', minute = '1/15')
 sched.start()

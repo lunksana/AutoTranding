@@ -1254,9 +1254,9 @@ if __name__ == '__main__':
 # sched.add_job(sched_test, 'cron', second = '5/10')
 # sched.start()
 # sched.get_jobs()
-def test_k(time):
+def test_k():
     while 1:
-        ohl = bn.fetch_ohlcv(symbol, time, limit = 3)
+        ohl = bn.fetch_ohlcv(symbol, '15m', limit = 3)
         for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
             if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
                 side = 'SHORT'
@@ -1267,6 +1267,5 @@ def test_k(time):
                 if ohl[x][4] - ohl[x][3] > ohl[x][1] - ohl[x][4] or ohl[y][1] - ohl[y][3] > ohl[y][4] - ohl[y][1]:
                     print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
 
-scheb.start()
-scheb.add_job(test_k, 'cron', minute = '1/15', args = ('15m',))
-scheb.add_job(test_k, 'cron', minute = '1/30', args = ('30m',))
+sched.add_job(test_k, 'cron', minute = '1/15')
+sched.start()

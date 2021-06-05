@@ -1079,18 +1079,27 @@ def Autoorders():
     print('程序退出！当前余额：{}'.format(bn.fetch_free_balance()['USDT']))
     return
             
+# 线程控制
+def th_ctr():
+    th_value = re.compile(r'^thread\-[0-9]+$')
+    th_names = [nm.getName() for nm in threading.enumerate()]
+    while 1:
+        if len(x for x in th_names if th_value.match(x)) < 1:
+            threading.Thread(target = th_create, args = (que,), name = 'thread-' + time.time()).start()
+            time.sleep(300)
+
         
-def loop(function, fun_args = None):
-    functions = ['Autocreate', 'Autotrading', 'push_message']
-    if function not in functions:
-        print('函数错误！')
-        return
-    else:
-        if fun_args != None and function == 'Autotrading':
-            th = threading.Thread(target = function, args = (fun_args,))
-        else:
-            th = threading.Thread(function)
-    return th 
+# def loop(function, fun_args = None):
+#     functions = ['Autocreate', 'Autotrading', 'push_message']
+#     if function not in functions:
+#         print('函数错误！')
+#         return
+#     else:
+#         if fun_args != None and function == 'Autotrading':
+#             th = threading.Thread(target = function, args = (fun_args,))
+#         else:
+#             th = threading.Thread(function)
+#     return th 
     
 def main():
     order_check()

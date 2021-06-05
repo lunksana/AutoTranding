@@ -21,11 +21,13 @@ import logging
 from pprint import pprint
 from queue import Queue
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 #from cyberbrain import trace
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
 sched = BlockingScheduler()
+scheb = BackgroundScheduler()
 positions_split = 45
 leverage = 16
 que = Queue()
@@ -1120,7 +1122,7 @@ if __name__ == '__main__':
     print('30m:',avg_ch('30m'))
     # print('1h:',avg_ch('1h'))
     # Autoorders()
-    main()
+    #main()
     
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
@@ -1252,3 +1254,19 @@ if __name__ == '__main__':
 # sched.add_job(sched_test, 'cron', second = '5/10')
 # sched.start()
 # sched.get_jobs()
+def test_k(time):
+    while 1:
+        ohl = bn.fetch_ohlcv(symbol, time, limit = 3)
+        for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
+            if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
+                side = 'SHORT'
+                if ohl[x][2] - ohl[x][4] > ohl[x][4] - ohl[x][1] or ohl[y][2] - ohl[y][1] > ohl[y][1] - ohl[y][4]:
+                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+            elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
+                side = 'LONG'
+                if ohl[x][4] - ohl[x][3] > ohl[x][1] - ohl[x][4] or ohl[y][1] - ohl[y][3] > ohl[y][4] - ohl[y][1]:
+                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+
+scheb.start()
+scheb.add_job(test_k, 'cron', minute = '1/15', args = ('15m',))
+scheb.add_job(test_k, 'cron', minute = '1/30', args = ('30m',))

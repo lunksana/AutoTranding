@@ -26,8 +26,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
-sched = BlockingScheduler()
-scheb = BackgroundScheduler()
+schebl = BlockingScheduler()
+schebg = BackgroundScheduler()
 positions_split = 45
 leverage = 16
 que = Queue()
@@ -1267,5 +1267,5 @@ def test_k(k_time):
                 print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
     print('无符合要求K线！', time.time())
 
-sched.add_job(test_k, 'cron', minute = '1/15', args = ['15m'])
-sched.start()
+schebl.add_job(test_k, 'cron', minute = '1/15', args = ['15m'])
+schebl.start()

@@ -15,6 +15,7 @@ import userapi
 import requests
 import json
 import re
+import datetime
 import logging
 #from concurrent.futures import ThreadPoolExecutor, as_completed
 #from multiprocessing import Process 
@@ -378,6 +379,15 @@ def order_check(order_id = None):
         order_check()
         return
 
+def db_del(db_col):
+    collist = db.list_collection_names()
+    if db_col not in collist:
+        print('集合名错误！')
+        return
+    else:
+        Deadline_time = time.strftime('%Y-%m-%d %H:%M:%S', datetime.datetime.now() - datetime.timedelta(days = 15))
+        del_data = db_col.delete_many({'order_uptime': {'$lte': Deadline_time}})
+        return del_data.deleted_count
 
 # 开单
 def make_order(btc_price, amount):
@@ -718,25 +728,25 @@ def Autotrading(side):
             defense_order_dict = {}
             defense_order_list = []
             if side == 'LONG':
-                price_step = int(pos_price * 0.08 / pos_lev)
+                price_step = int(pos_price * 0.06 / pos_lev)
                 limit_price = pos_price + price_step
                 trigger_price = pos_price
                 retry = 5
                 while pos_status(side):
-                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.2 / pos_lev:
+                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.12 / pos_lev:
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
-                        sl_price = round(pos_price - pos_price * 0.2 / pos_lev, 2)
+                        sl_price = round(pos_price - pos_price * 0.12 / pos_lev, 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side)#24%止损单
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
                                 adj_value = round((trigger_price - pos_price) / price_step) -1
-                                pt = 0.03 + 0.02 * adj_value * (adj_value + 1)
+                                pt = 0.02 + 0.02 * adj_value * (adj_value + 1)
                                 if trigger_price <= pos_price:
-                                    defense_price = int(pos_price - pos_price * 0.1 / pos_lev)                                 
+                                    defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
                                 else:
                                     #defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
                                     #defense_price = int(pos_price * (1 + (0.06 + 0.03 * adj_value) / pos_lev))
@@ -763,14 +773,14 @@ def Autotrading(side):
                                 else:
                                     limit_price += price_step
                                 trigger_price = limit_price - price_step
-                        elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.12 / pos_lev) and len(defense_order_list) < 1:
-                            if not pos_status('SHORT'):
-                                order_id = auto_create('SHORT', 'm9')
-                                time.sleep(5)
-                                threading.Thread(target = Autotrading, args = ('SHORT',), name = order_id).start()
-                            else:
-                                create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
-                                break
+                        # elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.12 / pos_lev) and len(defense_order_list) < 1:
+                        #     if not pos_status('SHORT'):
+                        #         order_id = auto_create('SHORT', 'm9')
+                        #         time.sleep(5)
+                        #         threading.Thread(target = Autotrading, args = ('SHORT',), name = order_id).start()
+                        #     else:
+                        #         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
+                        #         break
                         # elif bn.fetch_ticker(symbol)['last'] < pos_price and time.time() - create_time > 600 and not db_search(side, int(pos_price - pos_price * 0.12 / pos_lev)):
                         #     safe_order_list.append(create_tpsl_order('STOP', 1, round(pos_price - pos_price * (0.24 - 0.02 * safe_nu) / pos_lev, 2)))
                         #     safe_nu += 1
@@ -784,25 +794,25 @@ def Autotrading(side):
                         time.sleep(5)
                         retry -= 1
             else:
-                price_step = pos_price / 1.08 * 0.08 / pos_lev
+                price_step = pos_price / 1.06 * 0.06 / pos_lev
                 limit_price = pos_price - price_step
                 trigger_price = pos_price
                 retry = 5
                 while pos_status(side):
-                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.2 / pos_lev):
+                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.12 / pos_lev):
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
-                        sl_price = round(pos_price / (1 - 0.2 / pos_lev), 2)
+                        sl_price = round(pos_price / (1 - 0.12 / pos_lev), 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #24%止损单
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
                                 adj_value = round((pos_price - trigger_price) / price_step) - 1
-                                pt = 0.03 + 0.02 * adj_value * (adj_value + 1)
+                                pt = 0.02 + 0.02 * adj_value * (adj_value + 1)
                                 if trigger_price >= pos_price:
-                                    defense_price = int(pos_price / (1 - 0.1 / pos_lev))                                 
+                                    defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
                                 else:
                                     defense_price = int(pos_price / ( 1 + pt / pos_lev))
                                     # defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
@@ -828,14 +838,14 @@ def Autotrading(side):
                                 else:
                                     limit_price -= price_step
                                 trigger_price = limit_price + price_step
-                        elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
-                            if not pos_status('LONG'):
-                                order_id= auto_create('LONG', 'm9')
-                                time.sleep(5)
-                                threading.Thread(target = Autotrading, args = ('LONG',), name = order_id).start()
-                            else:
-                                create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
-                                break
+                        # elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
+                        #     if not pos_status('LONG'):
+                        #         order_id= auto_create('LONG', 'm9')
+                        #         time.sleep(5)
+                        #         threading.Thread(target = Autotrading, args = ('LONG',), name = order_id).start()
+                        #     else:
+                        #         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
+                        #         break
                     print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
                         time.sleep(10)
@@ -1102,7 +1112,7 @@ def main():
             return
         else:
             if not schebg.get_jobs():
-                schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', second = 30, name = 'sched')
+                schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', second = 15, name = 'sched')
             th_value = re.compile(r'^thread\-[0-9]+$')
             while len(threading.enumerate()) < 6:
                 th_names = [nm.getName() for nm in threading.enumerate()]

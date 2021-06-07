@@ -1121,6 +1121,7 @@ def main():
                 time.sleep(60)
         pprint(threading.enumerate())
         print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
+        print(schebg.get_jobs())
         time.sleep(300)
             
         

@@ -1106,7 +1106,7 @@ def main():
             th_value = re.compile(r'^thread\-[0-9]+$')
             while len(threading.enumerate()) < 6:
                 th_names = [nm.getName() for nm in threading.enumerate()]
-                if len(x for x in th_names if th_value.match(x)) < 1:
+                if len([x for x in th_names if th_value.match(x)]) < 1:
                     threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
                 time.sleep(60)
         pprint(threading.enumerate())

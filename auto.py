@@ -1080,16 +1080,6 @@ def Autoorders():
                 #         continue
     print('程序退出！当前余额：{}'.format(bn.fetch_free_balance()['USDT']))
     return
-            
-# 线程控制
-def th_ctr():
-    th_value = re.compile(r'^thread\-[0-9]+$')
-    th_names = [nm.getName() for nm in threading.enumerate()]
-    while 1:
-        if len(x for x in th_names if th_value.match(x)) < 1:
-            threading.Thread(target = th_create, args = (que,), name = 'thread-' + time.time()).start()
-            time.sleep(300)
-
         
 # def loop(function, fun_args = None):
 #     functions = ['Autocreate', 'Autotrading', 'push_message']
@@ -1105,16 +1095,24 @@ def th_ctr():
     
 def main():
     order_check()
+    schebg.start()
     while 1:
-        if bn.fetch_free_balance()['USDT'] <= 200:
+        if bn.fetch_total_balance()['USDT'] <= 250:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             return
         else:
-            threading.Thread(target = th_create, args = (que,), name = 'create_th' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))).start()
-            sched.add_job(get_side, 'cron', args = (que,), minute = '1/15', name = 'Main_Th '+ time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-            print(threading.enumerate())
-            sched.get_jobs()
-            sched.start()
+            if not schebg.get_jobs():
+                schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', senond = 30, name = 'sched')
+            th_value = re.compile(r'^thread\-[0-9]+$')
+            while len(threading.enumerate()) < 5:
+                th_names = [nm.getName() for nm in threading.enumerate()]
+                if len(x for x in th_names if th_value.match(x)) < 1:
+                    threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
+                time.sleep(60)
+        pprint(threading.enumerate())
+        print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
+        time.sleep(300)
+            
         
 if __name__ == '__main__':
     # print('5m:',avg_ch('5m'))
@@ -1122,7 +1120,7 @@ if __name__ == '__main__':
     print('30m:',avg_ch('30m'))
     # print('1h:',avg_ch('1h'))
     # Autoorders()
-    #main()
+    main()
     
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
@@ -1254,18 +1252,18 @@ if __name__ == '__main__':
 # sched.add_job(sched_test, 'cron', second = '5/10')
 # sched.start()
 # sched.get_jobs()
-def test_k(k_time):
-    ohl = bn.fetch_ohlcv(symbol, k_time, limit = 3)
-    for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
-        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
-            side = 'SHORT'
-            if ohl[x][2] - ohl[x][4] > ohl[x][4] - ohl[x][1] or ohl[y][2] - ohl[y][1] > ohl[y][1] - ohl[y][4]:
-                print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
-        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
-            side = 'LONG'
-            if ohl[x][4] - ohl[x][3] > ohl[x][1] - ohl[x][4] or ohl[y][1] - ohl[y][3] > ohl[y][4] - ohl[y][1]:
-                print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
-    print('无符合要求K线！', time.time())
+# def test_k(k_time):
+#     ohl = bn.fetch_ohlcv(symbol, k_time, limit = 3)
+#     for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
+#         if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ohl[z][1]:
+#             side = 'SHORT'
+#             if ohl[x][2] - ohl[x][4] > ohl[x][4] - ohl[x][1] or ohl[y][2] - ohl[y][1] > ohl[y][1] - ohl[y][4]:
+#                 print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+#         elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ohl[z][1]:
+#             side = 'LONG'
+#             if ohl[x][4] - ohl[x][3] > ohl[x][1] - ohl[x][4] or ohl[y][1] - ohl[y][3] > ohl[y][4] - ohl[y][1]:
+#                 print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side)
+#     print('无符合要求K线！', time.time())
 
-schebl.add_job(test_k, 'cron', minute = '1/15', args = ['15m'])
-schebl.start()
+# schebl.add_job(test_k, 'cron', minute = '1/15', args = ['15m'])
+# schebl.start()

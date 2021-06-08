@@ -331,67 +331,77 @@ def db_search(side, price):
 如果输入的是没有参数的情况，那将自动遍历订单，自动对已经发生变化的订单进行数据库操作
 '''
 def order_check(order_id = None):
-    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(36))
-    start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['uptime']
-    db_trade_list = list(trade_col.find({'uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
-    # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
-    order_id_list = [x['order_id'] for x in db_order_list]
-    trade_id_list = [x['trade_id'] for x in db_trade_list]
-    open_order_id_list = [x['id'] for x in bn.fetch_open_orders(symbol)]
-    if order_id == None:
-#        all_closed_id_list = [x['id'] for x in bn.fetch_orders(symbol) if x['status'] == 'closed']
-#        order_list = bn.fetch_orders(symbol)
-#        order_dict = dict(zip([x['id'] for x in order_list],[x['status'] for x in order_list]))
-        for id in order_id_list:
-            order_status = bn.fetch_order_status(id, symbol)
-            if order_col.find_one({'order_id': id})['order_status'] != order_status:
-                order_col.find_one_and_update({'order_id': id}, {'$set': {'order_status': order_status}})
-            if order_status == 'closed' and id not in trade_id_list:
-                for trade in bn.fetch_my_trades(symbol):
-                    if trade['order'] == id:
-                        db_insert(trade)
-        if set(order_id_list).issuperset(set(open_order_id_list)):
-            pass
+    if db.list_collection_names():
+        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(36))
+        start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['uptime']
+        db_trade_list = list(trade_col.find({'uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
+        # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
+        order_id_list = [x['order_id'] for x in db_order_list]
+        trade_id_list = [x['trade_id'] for x in db_trade_list]
+        open_order_id_list = [x['id'] for x in bn.fetch_open_orders(symbol)]
+        if order_id == None:
+    #        all_closed_id_list = [x['id'] for x in bn.fetch_orders(symbol) if x['status'] == 'closed']
+    #        order_list = bn.fetch_orders(symbol)
+    #        order_dict = dict(zip([x['id'] for x in order_list],[x['status'] for x in order_list]))
+            for id in order_id_list:
+                order_status = bn.fetch_order_status(id, symbol)
+                if order_col.find_one({'order_id': id})['order_status'] != order_status:
+                    order_col.find_one_and_update({'order_id': id}, {'$set': {'order_status': order_status}})
+                if order_status == 'closed' and id not in trade_id_list:
+                    for trade in bn.fetch_my_trades(symbol):
+                        if trade['order'] == id:
+                            db_insert(trade)
+            if set(order_id_list).issuperset(set(open_order_id_list)):
+                pass
+            else:
+                for id in open_order_id_list:
+                    if id not in order_id_list:
+                        for order in bn.fetch_open_orders(symbol):
+                            if order['id'] == id:
+                                db_insert(order)
+            return
+        elif order_id.isdigit(): #判断输入的内容能否转换成数字
+            order_status = bn.fetch_order_status(order_id,symbol)    # 基于id获取订单状态
+            if order_id not in trade_id_list:   
+        # while order_status == "open":
+        #     time.sleep(3)
+        #     order_status = bn.fetch_order_status(order_id,symbol)
+        #     continue
+                if order_status == 'closed':
+                    for trade in bn.fetch_my_trades(symbol):
+                        if trade['order'] == order_id:
+                            db_insert(trade)
+                            order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': order_status}})
+                elif order_status != 'open':
+                    order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': order_status}})
+                order_check()
+                return order_status
+            else:
+                order_check()
+                return order_status
         else:
-            for id in open_order_id_list:
-                if id not in order_id_list:
-                    for order in bn.fetch_open_orders(symbol):
-                        if order['id'] == id:
-                            db_insert(order)
-        return
-    elif order_id.isdigit(): #判断输入的内容能否转换成数字
-        order_status = bn.fetch_order_status(order_id,symbol)    # 基于id获取订单状态
-        if order_id not in trade_id_list:   
-    # while order_status == "open":
-    #     time.sleep(3)
-    #     order_status = bn.fetch_order_status(order_id,symbol)
-    #     continue
-            if order_status == 'closed':
-                for trade in bn.fetch_my_trades(symbol):
-                    if trade['order'] == order_id:
-                        db_insert(trade)
-                        order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': order_status}})
-            elif order_status != 'open':
-                order_col.find_one_and_update({'order_id': order_id}, {'$set': {'order_status': order_status}})
+            print('输入错误！')
             order_check()
-            return order_status
-        else:
-            order_check()
-            return order_status
+            return
     else:
-        print('输入错误！')
-        order_check()
         return
 
-def db_del(db_col):
-    collist = db.list_collection_names()
-    if db_col not in collist:
-        print('集合名错误！')
-        return
+def db_del(db_col = None):
+    Deadline_time = time.strftime('%Y-%m-%d %H:%M:%S', datetime.datetime.now() - datetime.timedelta(days = 15))
+    if db_col:
+        if db_col not in db.list_collection_names():
+            print('集合名错误！')
+            return
+        else:
+            del_data = db[db_col].delete_many({'uptime': {'$lte': Deadline_time}})
+            return del_data.deleted_count
     else:
-        Deadline_time = time.strftime('%Y-%m-%d %H:%M:%S', datetime.datetime.now() - datetime.timedelta(days = 15))
-        del_data = db_col.delete_many({'uptime': {'$lte': Deadline_time}})
-        return del_data.deleted_count
+        del_count = 0
+        for col in db.list_collection_names():
+            del_data = db[col].delete_many({'uptime': {'$lte': Deadline_time}})
+            del_count += del_data.deleted_count
+        return del_count    
+        
 
 # 开单
 def make_order(btc_price, amount):
@@ -1118,6 +1128,7 @@ def main():
         else:
             if not schebg.get_jobs():
                 schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', second = 15, name = 'sched')
+                schebg.add_job(db_del, 'cron', day = '*/15')
             th_value = re.compile(r'^thread\-[0-9]+$')
             th_names = [nm.getName() for nm in threading.enumerate()]
             if len([x for x in th_names if th_value.match(x)]) < 1:

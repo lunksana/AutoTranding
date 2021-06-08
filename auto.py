@@ -290,14 +290,14 @@ def db_insert(data_info):
             'order_amount': data_info['amount'],
             'order_side': data_info['side'],
             'order_positionSide': data_info['info']['positionSide'],
-            'order_uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(data_info['info']['updateTime']) / 1000))
+            'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(data_info['info']['updateTime']) / 1000))
         }
     elif isinstance(data_info,float):
         month = time.strftime('%m',time.localtime(time.time()))
         col = price_db[month]
         col_dict = {
             'btc_price': data_info,
-            'updatetime': time.strftime('%d-%H:%M:%S',time.localtime(time.time()))
+            'uptime': time.strftime('%d-%H:%M:%S',time.localtime(time.time()))
         }
     else:
         col = trade_col
@@ -309,7 +309,7 @@ def db_insert(data_info):
             'trade_P&L': float(data_info['info']['realizedPnl']),
             'trade_side': data_info['info']['side'],
             'trade_positionSide': data_info['info']['positionSide'],
-            'trade_time': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(data_info['timestamp']) / 1000))
+            'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(data_info['timestamp']) / 1000))
         }
     col.insert_one(col_dict)
     return
@@ -331,9 +331,9 @@ def db_search(side, price):
 如果输入的是没有参数的情况，那将自动遍历订单，自动对已经发生变化的订单进行数据库操作
 '''
 def order_check(order_id = None):
-    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('order_uptime', -1)]).limit(36))
-    start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['order_uptime']
-    db_trade_list = list(trade_col.find({'order_uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
+    db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(36))
+    start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['uptime']
+    db_trade_list = list(trade_col.find({'uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
     # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
     order_id_list = [x['order_id'] for x in db_order_list]
     trade_id_list = [x['trade_id'] for x in db_trade_list]
@@ -390,7 +390,7 @@ def db_del(db_col):
         return
     else:
         Deadline_time = time.strftime('%Y-%m-%d %H:%M:%S', datetime.datetime.now() - datetime.timedelta(days = 15))
-        del_data = db_col.delete_many({'order_uptime': {'$lte': Deadline_time}})
+        del_data = db_col.delete_many({'uptime': {'$lte': Deadline_time}})
         return del_data.deleted_count
 
 # 开单
@@ -892,6 +892,7 @@ def th_create(q_in):
     if side != None and order_id not in [nu.getName() for nu in threading.enumerate()]:
         threading.Thread(target = Autotrading, args = (side,), name = order_id).start()
     else:
+        threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
         return
 
 # 获取方向

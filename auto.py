@@ -23,12 +23,16 @@ from pprint import pprint
 from queue import Queue
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 #from cyberbrain import trace
 
 # 初始化变量及数据库
 symbol = 'BTC/USDT'
+executors = {
+      'default': ThreadPoolExecutor(5)
+}
 schebl = BlockingScheduler()
-schebg = BackgroundScheduler()
+schebg = BackgroundScheduler(executors = executors)
 positions_split = 45
 leverage = 16
 que = Queue()
@@ -1114,11 +1118,10 @@ def main():
             if not schebg.get_jobs():
                 schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', second = 15, name = 'sched')
             th_value = re.compile(r'^thread\-[0-9]+$')
-            while len(threading.enumerate()) < 6:
-                th_names = [nm.getName() for nm in threading.enumerate()]
-                if len([x for x in th_names if th_value.match(x)]) < 1:
-                    threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
-                time.sleep(60)
+            th_names = [nm.getName() for nm in threading.enumerate()]
+            if len([x for x in th_names if th_value.match(x)]) < 1:
+                threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
+            time.sleep(60)
         pprint(threading.enumerate())
         print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
         print(schebg.get_jobs())

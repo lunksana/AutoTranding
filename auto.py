@@ -1127,7 +1127,7 @@ def main():
             return
         else:
             if not schebg.get_jobs():
-                schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', second = 15, name = 'sched')
+                schebg.add_job(get_side, 'cron', args = [que], minute = '1/15', second = 30, name = 'sched')
                 schebg.add_job(db_del, 'cron', day = '*/15')
             th_value = re.compile(r'^thread\-[0-9]+$')
             th_names = [nm.getName() for nm in threading.enumerate()]

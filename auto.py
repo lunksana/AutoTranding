@@ -778,7 +778,7 @@ def Autotrading(side):
                                         print('挂单{}已被取消！'.format(defense_order_list[0])) 
                                         del defense_order_list[0]
                                 else:
-                                    time.sleep(5)
+                                    time.sleep(3)
                                     continue                            
                                 print(defense_price, defense_order_list)
                             else:
@@ -843,7 +843,7 @@ def Autotrading(side):
                                         print('挂单{}已被取消！'.format(defense_order_list[0]))
                                         del defense_order_list[0]
                                 else:
-                                    time.sleep(5)
+                                    time.sleep(3)
                                     continue
                                 print(defense_price, defense_order_list)
                             else:

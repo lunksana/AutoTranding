@@ -741,6 +741,9 @@ def Autotrading(side):
             pos_price = check_positions()[side]['pos_price']            
             defense_order_dict = {}
             defense_order_list = []
+            order_cost = trade_col.find_one({
+                'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']
+            })['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.06 / pos_lev)
                 limit_price = pos_price + price_step
@@ -879,12 +882,12 @@ def Autotrading(side):
                     except:
                         pass
             order_check()
-            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))
+            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))           
             push_msg = {
                 '标题：': '{}订单已终止'.format(side),
                 '持仓价格：': pos_price,
                 '成交价格：': trade_info[0]['trade_price'],
-                '盈亏情况：': trade_info[0]['trade_P&L'] - trade_info[0]['trade_cost'],
+                '盈亏情况：': trade_info[0]['trade_P&L'] - trade_info[0]['trade_cost'] - order_cost,
                 '成交时间：': trade_info[0]['uptime']
             }
             push_message(push_msg)
@@ -910,14 +913,16 @@ def get_side(q_out):
     ohl = bn.fetch_ohlcv(symbol, '15m', limit = 3)
     side = None
     for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
-        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m'):
+        mid_price = int((max(ohl[x][2], ohl[y][2], ohl[z][2]) + min(ohl[x][3], ohl[y][3], ohl[z][3])) / 2)
+        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m') and ohl[z][4] < [ohl][z][1]:
             side = 'SHORT'
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
-        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m'):
+        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m') and ohl[z][4] > [ohl][z][1]:
             side = 'LONG' 
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
+        print(mid_price, ohl[z][4])
     event = threading.Event()
     if side != None and not pos_status(side):
         auto_order = auto_create(side, mode)
@@ -1127,8 +1132,8 @@ def main():
             return
         else:
             if not schebg.get_jobs():
-                schebg.add_job(get_side, 'cron', args = [que], minute = '1/15', second = 30, name = 'sched')
-                schebg.add_job(db_del, 'cron', day = '*/15')
+                schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', second = 30, name = 'sched')
+                schebg.add_job(db_del, 'cron', day = '*/15', name = 'del_expired_db')
             th_value = re.compile(r'^thread\-[0-9]+$')
             th_names = [nm.getName() for nm in threading.enumerate()]
             if len([x for x in th_names if th_value.match(x)]) < 1:

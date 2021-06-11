@@ -412,6 +412,7 @@ def make_order(btc_price, amount):
         new_order = bn.create_limit_sell_order(symbol, amount, btc_price, {'positionSide': 'SHORT'})
     db_insert(new_order)
     order_id = new_order['id']
+    order_check(order_id)
     return order_id
         
     
@@ -582,7 +583,7 @@ def create_tpsl_order(type, ratio, price, poside):
                 return
             continue    
     db_insert(the_order)
-    order_check()
+    order_check(the_order['id'])
     return the_order['id']
 
 # 取消订单，基于输入的内容和类型进行订单的取消
@@ -741,9 +742,7 @@ def Autotrading(side):
             pos_price = check_positions()[side]['pos_price']            
             defense_order_dict = {}
             defense_order_list = []
-            order_cost = trade_col.find_one({
-                'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']
-            })['trade_cost']
+            order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.06 / pos_lev)
                 limit_price = pos_price + price_step
@@ -1152,8 +1151,7 @@ if __name__ == '__main__':
     print('30m:',avg_ch('30m'))
     # print('1h:',avg_ch('1h'))
     # Autoorders()
-    main()
-    
+    main()    
 
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #print(ma(5,'1h'))

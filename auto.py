@@ -895,7 +895,8 @@ def Autotrading(side):
         else:
             order_check()
             print('无持仓！')
-    except:
+    except Exception as e:
+        print(e)
         Autotrading(side)
 
 

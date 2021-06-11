@@ -914,11 +914,11 @@ def get_side(q_out):
     side = None
     for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
         mid_price = int((max(ohl[x][2], ohl[y][2], ohl[z][2]) + min(ohl[x][3], ohl[y][3], ohl[z][3])) / 2)
-        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m') and ohl[z][4] < [ohl][z][1]:
+        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m') and ohl[z][4] < ohl[z][1]:
             side = 'SHORT'
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
-        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m') and ohl[z][4] > [ohl][z][1]:
+        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m') and ohl[z][4] > ohl[z][1]:
             side = 'LONG' 
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])

@@ -744,7 +744,7 @@ def Autotrading(side):
             defense_order_list = []
             order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
             if side == 'LONG':
-                price_step = int(pos_price * 0.06 / pos_lev)
+                price_step = int(pos_price * 0.05 / pos_lev)
                 limit_price = pos_price + price_step
                 trigger_price = pos_price
                 retry = 5
@@ -810,7 +810,7 @@ def Autotrading(side):
                         time.sleep(5)
                         retry -= 1
             else:
-                price_step = pos_price / 1.06 * 0.06 / pos_lev
+                price_step = pos_price / 1.05 * 0.05 / pos_lev
                 limit_price = pos_price - price_step
                 trigger_price = pos_price
                 retry = 5

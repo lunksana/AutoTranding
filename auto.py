@@ -575,15 +575,15 @@ def create_tpsl_order(type, ratio, price, poside):
                 'workingType': 'MARK_PRICE'
             })
             print('订单成功执行！')
+            
             break
-        except:
-            print('订单执行异常，重试中！')
+        except Exception as e:
+            print('订单执行异常，重试中！错误信息：{}'.format(e))
             try_count -= 1
             if try_count == 0:
                 return
             continue    
     db_insert(the_order)
-    order_check(the_order['id'])
     return the_order['id']
 
 # 取消订单，基于输入的内容和类型进行订单的取消

@@ -742,7 +742,8 @@ def Autotrading(side):
             pos_price = check_positions()[side]['pos_price']            
             defense_order_dict = {}
             defense_order_list = []
-            order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
+            #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
+            order_cost = trade_col.find_one({'trade_id': threading.current_thread().name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.05 / pos_lev)
                 limit_price = pos_price + price_step
@@ -760,7 +761,7 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
                                 adj_value = round((trigger_price - pos_price) / price_step) -1
-                                pt = 0.02 + 0.15 * adj_value * (adj_value + 1)
+                                pt = 0.02 + 0.015 * adj_value * (adj_value + 1)
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
                                 else:
@@ -826,7 +827,7 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
                                 adj_value = round((pos_price - trigger_price) / price_step) - 1
-                                pt = 0.02 + 0.15 * adj_value * (adj_value + 1)
+                                pt = 0.02 + 0.015 * adj_value * (adj_value + 1)
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
                                 else:
@@ -856,7 +857,7 @@ def Autotrading(side):
                                 trigger_price = limit_price + price_step
                         # elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
                         #     if not pos_status('LONG'):
-                        #         order_id= auto_create('LONG', 'm9')
+                        #         order_id= auto_ycreate('LONG', 'm9')
                         #         time.sleep(5)
                         #         threading.Thread(target = Autotrading, args = ('LONG',), name = order_id).start()
                         #     else:
@@ -1124,6 +1125,8 @@ def Autoorders():
 #     return th 
     
 def main():
+    print('主函数启动时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    ch_lev(leverage)
     order_check()
     schebg.start()
     while 1:

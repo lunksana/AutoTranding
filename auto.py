@@ -760,7 +760,7 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
                                 adj_value = round((trigger_price - pos_price) / price_step) -1
-                                pt = 0.02 + 0.02 * adj_value * (adj_value + 1)
+                                pt = 0.02 + 0.15 * adj_value * (adj_value + 1)
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
                                 else:
@@ -826,7 +826,7 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
                                 adj_value = round((pos_price - trigger_price) / price_step) - 1
-                                pt = 0.02 + 0.02 * adj_value * (adj_value + 1)
+                                pt = 0.02 + 0.15 * adj_value * (adj_value + 1)
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
                                 else:

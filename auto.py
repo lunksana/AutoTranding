@@ -7,6 +7,7 @@
 
 import ccxt
 import time
+from pkg_resources import register_namespace_handler
 import pymongo
 #import schedule
 # import pandas as pd
@@ -34,7 +35,7 @@ executors = {
 schebl = BlockingScheduler()
 schebg = BackgroundScheduler(executors = executors)
 positions_split = 45
-leverage = 16
+leverage = 20
 que = Queue()
 # 多进程模式下对接数据库的方式需要类似与如下类型
 dbclient = pymongo.MongoClient(userapi.dbaddr, userapi.dbport)
@@ -56,6 +57,7 @@ price_db = dbclient['price']
 order_col = db['orders']
 trade_col = db['trades']
 funds_col = db['funds']
+id_col = db['id']
 
 # FORMAT = '%(asctime)s %(levename)s %(message)s'
 # DATEFMT = '%Y-%m-%d %H:%M:%S'
@@ -299,6 +301,12 @@ def db_insert(data_info):
             'btc_price': data_info,
             'uptime': time.strftime('%d-%H:%M:%S',time.localtime(time.time()))
         }
+    elif isinstance(data_info, int):
+        col = id_col
+        col_dict = {
+            'main_id': data_info,
+            'order_id_list': []
+        }
     else:
         col = trade_col
         col_dict = {
@@ -332,7 +340,7 @@ def db_search(side, price):
 '''
 def order_check(order_id = None):
     if db.list_collection_names():
-        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(36))
+        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(18))
         start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['uptime']
         db_trade_list = list(trade_col.find({'uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
         # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
@@ -402,6 +410,16 @@ def db_del(db_col = None):
             del_count += del_data.deleted_count
         return del_count    
         
+# 自动建立每个订单后续生成的订单
+def id_db(main_id, order_id):
+    if id_col.find_one({'main_id': main_id}):
+        id_list = id_col.find_one({'main_id': main_id})['order_id_list']
+        if order_id not in id_list:
+            id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': id_list.append(order_id)}})
+    else:
+        db_insert(main_id)
+        id_db(main_id, order_id)
+    return
 
 # 开单
 def make_order(btc_price, amount):
@@ -575,7 +593,7 @@ def create_tpsl_order(type, ratio, price, poside):
                 'workingType': 'MARK_PRICE'
             })
             print('订单成功执行！')
-            
+            order_check(the_order['id'])
             break
         except Exception as e:
             print('订单执行异常，重试中！错误信息：{}'.format(e))
@@ -741,7 +759,7 @@ def Autotrading(side):
             pos_lev = check_positions()[side]['pos_lev']
             pos_price = check_positions()[side]['pos_price']            
             defense_order_dict = {}
-            defense_order_list = []
+            # defense_order_list = []
             #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
             order_cost = trade_col.find_one({'trade_id': threading.current_thread().name})['trade_cost']
             if side == 'LONG':
@@ -774,11 +792,13 @@ def Autotrading(side):
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                     if not defense_order.isdigit():
                                         continue
-                                    defense_order_list.append(defense_order)
+                                    # defense_order_list.append(defense_order)
+                                    id_db(threading.current_thread().name, defense_order)
                                     defense_order_dict[trigger_price] = defense_order
-                                    if len(defense_order_list) > 3:
-                                        bn.cancel_order(defense_order_list[0], symbol)
-                                        print('挂单{}已被取消！'.format(defense_order_list[0])) 
+                                    if len(id_db.find_one({'main_id': threading.current_thread().name})['order_id_list']) > 3:
+                                        id_list = id_db.find_one({'main_id': threading.current_thread().name})['order_id_list']
+                                        bn.cancel_order(id_list[0], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[0]))
                                         del defense_order_list[0]
                                 else:
                                     time.sleep(3)

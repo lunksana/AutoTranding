@@ -308,7 +308,7 @@ def db_insert(data_info):
             'main_id': data_info,
             'pos_price': order_info['average'],
             'amount': order_info['amount'],
-            'order_id_list': [],
+            'order_id_list': list(),
             'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(order_info['timestamp'] / 1000))
         }
     else:
@@ -419,7 +419,8 @@ def id_db(main_id, order_id = None, order_id_list = None):
     elif id_col.find_one({'main_id': main_id}):
         id_list = id_col.find_one({'main_id': main_id})['order_id_list']
         if order_id != None and order_id not in id_list:
-            id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': id_list.append(order_id)}})
+            id_list.append(order_id)
+            id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': id_list}})
         elif isinstance(order_id_list, list):
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': order_id_list}})
         else:
@@ -780,7 +781,8 @@ def Autotrading(side):
                     else:
                         sl_price = round(pos_price - pos_price * 0.12 / pos_lev, 2)
                         if not db_search(side, sl_price):
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side)#24%止损单
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side)#12%止损单
+                            id_db(threading.current_thread().name, alert_order)
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
@@ -803,9 +805,9 @@ def Autotrading(side):
                                     defense_order_dict[trigger_price] = defense_order
                                     if len(id_db(threading.current_thread().name)) > 3:
                                         id_list = id_db(threading.current_thread().name)
-                                        bn.cancel_order(id_list[0], symbol)
-                                        print('挂单{}已被取消！'.format(id_list[0]))
-                                        del id_list[0]
+                                        bn.cancel_order(id_list[1], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[1]))
+                                        del id_list[1]
                                         id_db(threading.current_thread().name, order_id_list = id_list)
                                 else:
                                     time.sleep(3)
@@ -849,7 +851,8 @@ def Autotrading(side):
                     else:
                         sl_price = round(pos_price / (1 - 0.12 / pos_lev), 2)
                         if not db_search(side, sl_price):
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #24%止损单
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
+                            id_db(threading.current_thread().name, alert_order)
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
@@ -871,9 +874,9 @@ def Autotrading(side):
                                     defense_order_dict[trigger_price] = defense_order
                                     if len(id_db(threading.current_thread().name)) > 3:
                                         id_list = id_db(threading.current_thread().name)
-                                        bn.cancel_order(id_list[0], symbol)
-                                        print('挂单{}已被取消！'.format(id_list[0]))
-                                        del id_list[0]
+                                        bn.cancel_order(id_list[1], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[1]))
+                                        del id_list[1]
                                         id_db(threading.current_thread().name, order_id_list = id_list)
                                 else:
                                     time.sleep(3)
@@ -901,16 +904,11 @@ def Autotrading(side):
                     else:
                         time.sleep(5)
                         retry -= 1
-            try:
-                bn.cancel_order(alert_order, symbol)
-            except:
-                pass
-            finally:
-                for order_id in id_db(threading.current_thread().name):
-                    try:
-                        bn.cancel_order(order_id, symbol)
-                    except:
-                        pass
+            for order_id in id_db(threading.current_thread().name):
+                try:
+                    bn.cancel_order(order_id, symbol)
+                except:
+                    pass
             order_check()
             trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))           
             push_msg = {
@@ -1176,8 +1174,7 @@ def main():
         print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
         print(schebg.get_jobs())
         time.sleep(300)
-            
-        
+     
 if __name__ == '__main__':
     # print('5m:',avg_ch('5m'))
     print('15m:',avg_ch('15m'))

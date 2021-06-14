@@ -282,7 +282,7 @@ def avg_ch(time):
 '''
 def db_insert(data_info):
     val = 'clientOrderId'
-    if val in data_info.keys():
+    if isinstance(data_info, dict) and val in data_info.keys():
         col = order_col
         col_dict = {
             'order_id': data_info['id'],
@@ -294,14 +294,14 @@ def db_insert(data_info):
             'order_positionSide': data_info['info']['positionSide'],
             'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(data_info['info']['updateTime']) / 1000))
         }
-    elif isinstance(data_info,float):
+    elif isinstance(data_info, float):
         month = time.strftime('%m',time.localtime(time.time()))
         col = price_db[month]
         col_dict = {
             'btc_price': data_info,
             'uptime': time.strftime('%d-%H:%M:%S',time.localtime(time.time()))
         }
-    elif isinstance(data_info, int):
+    elif isinstance(data_info, str) and data_info.isdigit():
         col = id_col
         order_info = bn.fetch_order(data_info, symbol)
         col_dict = {
@@ -426,7 +426,7 @@ def id_db(main_id, order_id = None, order_id_list = None):
             return id_list
     else:
         db_insert(main_id)
-        id_db(main_id, order_id)
+        id_db(main_id, order_id, order_id_list)
     return
 
 # 开单

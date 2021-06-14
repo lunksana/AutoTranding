@@ -303,9 +303,13 @@ def db_insert(data_info):
         }
     elif isinstance(data_info, int):
         col = id_col
+        order_info = bn.fetch_order(data_info, symbol)
         col_dict = {
             'main_id': data_info,
-            'order_id_list': []
+            'pos_price': order_info['average'],
+            'amount': order_info['amount'],
+            'order_id_list': [],
+            'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(order_info['timestamp'] / 1000))
         }
     else:
         col = trade_col
@@ -324,13 +328,11 @@ def db_insert(data_info):
 
 # 基于订单价格进行搜索
 def db_search(side, price):
-    order_list = list(order_col.find({'order_status': 'open', 'order_positionSide': side}, {'_id': 0, 'order_price': 1}))
-    for order in order_list:
-        if order['order_price'] == price:
-            return True
-        else:
-          pass
-    return False
+    order_list = [x['order_price'] for x in list(order_col.find({'order_status': 'open', 'order_positionSide': side}, {'_id': 0, 'order_price': 1}))]
+    if price in order_list:
+        return True
+    else:
+        return False
     
 
 # 判断挂单是否成交
@@ -411,11 +413,17 @@ def db_del(db_col = None):
         return del_count    
         
 # 自动建立每个订单后续生成的订单
-def id_db(main_id, order_id):
-    if id_col.find_one({'main_id': main_id}):
+def id_db(main_id, order_id = None, order_id_list = None):
+    if order_id != None and order_id_list != None:
+        return
+    elif id_col.find_one({'main_id': main_id}):
         id_list = id_col.find_one({'main_id': main_id})['order_id_list']
-        if order_id not in id_list:
+        if order_id != None and order_id not in id_list:
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': id_list.append(order_id)}})
+        elif isinstance(order_id_list, list):
+            id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': order_id_list}})
+        else:
+            return id_list
     else:
         db_insert(main_id)
         id_db(main_id, order_id)
@@ -475,8 +483,6 @@ def pos_status(side):
     for pos in bn.fapiPrivateV2GetPositionRisk({'symbol': bn_symbol}):
         if pos != None and pos['symbol'] == bn_symbol and float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
             return True
-        else:
-            pass
     return False
 
 # 建立持仓字典，方便查询
@@ -795,15 +801,16 @@ def Autotrading(side):
                                     # defense_order_list.append(defense_order)
                                     id_db(threading.current_thread().name, defense_order)
                                     defense_order_dict[trigger_price] = defense_order
-                                    if len(id_db.find_one({'main_id': threading.current_thread().name})['order_id_list']) > 3:
-                                        id_list = id_db.find_one({'main_id': threading.current_thread().name})['order_id_list']
+                                    if len(id_db(threading.current_thread().name)) > 3:
+                                        id_list = id_db(threading.current_thread().name)
                                         bn.cancel_order(id_list[0], symbol)
                                         print('挂单{}已被取消！'.format(id_list[0]))
-                                        del defense_order_list[0]
+                                        del id_list[0]
+                                        id_db(threading.current_thread().name, order_id_list = id_list)
                                 else:
                                     time.sleep(3)
                                     continue                            
-                                print(defense_price, defense_order_list)
+                                print(defense_price, id_db(threading.current_thread().name))
                             else:
                                 if btc_price - limit_price > price_step:
                                     limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
@@ -859,16 +866,19 @@ def Autotrading(side):
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                     if not defense_order.isdigit():
                                         continue
-                                    defense_order_list.append(defense_order)
+                                    # defense_order_list.append(defense_order)
+                                    id_db(threading.current_thread().name, defense_order)
                                     defense_order_dict[trigger_price] = defense_order
-                                    if len(defense_order_list) > 3:
-                                        bn.cancel_order(defense_order_list[0], symbol)
-                                        print('挂单{}已被取消！'.format(defense_order_list[0]))
-                                        del defense_order_list[0]
+                                    if len(id_db(threading.current_thread().name)) > 3:
+                                        id_list = id_db(threading.current_thread().name)
+                                        bn.cancel_order(id_list[0], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[0]))
+                                        del id_list[0]
+                                        id_db(threading.current_thread().name, order_id_list = id_list)
                                 else:
                                     time.sleep(3)
                                     continue
-                                print(defense_price, defense_order_list)
+                                print(defense_price, id_db(threading.current_thread().name))
                             else:
                                 if limit_price - btc_price > price_step:
                                     limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
@@ -896,7 +906,7 @@ def Autotrading(side):
             except:
                 pass
             finally:
-                for order_id in defense_order_list:
+                for order_id in id_db(threading.current_thread().name):
                     try:
                         bn.cancel_order(order_id, symbol)
                     except:

@@ -910,13 +910,14 @@ def Autotrading(side):
                 except:
                     pass
             order_check()
-            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))           
+            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))[0]           
             push_msg = {
                 '标题：': '{}订单已终止'.format(side),
                 '持仓价格：': pos_price,
-                '成交价格：': trade_info[0]['trade_price'],
-                '盈亏情况：': trade_info[0]['trade_P&L'] - trade_info[0]['trade_cost'] - order_cost,
-                '成交时间：': trade_info[0]['uptime']
+                '成交价格：': trade_info['trade_price'],
+                '盈亏情况：': trade_info['trade_P&L'] - trade_info['trade_cost'] - order_cost,
+                '账户余额：': bn.fetch_total_balance()['USDT'],
+                '成交时间：': trade_info['uptime']
             }
             push_message(push_msg)
             print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))

@@ -308,6 +308,7 @@ def db_insert(data_info):
             'main_id': data_info,
             'pos_price': order_info['average'],
             'amount': order_info['amount'],
+            'order_count': -2,
             'order_id_list': list(),
             'P&L': 0,
             'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(order_info['timestamp'] / 1000))
@@ -422,6 +423,7 @@ def id_db(main_id, order_id = None, order_id_list = None):
         if order_id != None and order_id not in id_list:
             id_list.append(order_id)
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': id_list}})
+            id_col.update_one({'main_id': main_id}, {'$inc': {'order_count': 1}})
         elif isinstance(order_id_list, list):
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': order_id_list}})
         else:
@@ -794,7 +796,8 @@ def Autotrading(side):
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
-                                adj_value = round((trigger_price - pos_price) / price_step) -1
+                                #adj_value = round((trigger_price - pos_price) / price_step) -1
+                                adj_value = id_col.find_one({'main_id': threading.current_thread().name})['order_count']
                                 pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 

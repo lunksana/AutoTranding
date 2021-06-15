@@ -399,7 +399,7 @@ def order_check(order_id = None):
         return
 
 def db_del(db_col = None):
-    Deadline_time = time.strftime('%Y-%m-%d %H:%M:%S', datetime.datetime.now() - datetime.timedelta(days = 15))
+    Deadline_time = (datetime.datetime.now() - datetime.timedelta(days = 15)).strftime('%Y-%m-%d %H:%M:%S')
     if db_col:
         if db_col not in db.list_collection_names():
             print('集合名错误！')
@@ -797,7 +797,7 @@ def Autotrading(side):
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
                                 #adj_value = round((trigger_price - pos_price) / price_step) -1
-                                adj_value = id_col.find_one({'main_id': threading.current_thread().name})['order_count']
+                                adj_value = max(id_col.find_one({'main_id': threading.current_thread().name})['order_count'], 0)
                                 pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
@@ -867,7 +867,8 @@ def Autotrading(side):
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
-                                adj_value = round((pos_price - trigger_price) / price_step) - 1
+                                #adj_value = round((pos_price - trigger_price) / price_step) - 1
+                                adj_value = max(id_col.find_one({'main_id': threading.current_thread().name})['order_count'], 0)
                                 pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
@@ -1172,8 +1173,13 @@ def main():
     order_check()
     schebg.start()
     while 1:
-        if bn.fetch_total_balance()['USDT'] <= 250:
+        if bn.fetch_total_balance()['USDT'] <= 240:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            pus_msg = {
+                '标题：': '资金已经低于阈值，结束程序！',
+                '资金：': bn.fetch_total_balance()['USDT']
+            }
+            push_message(pus_msg)
             return
         else:
             if not schebg.get_jobs():

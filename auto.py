@@ -76,19 +76,19 @@ bn = ccxt.binance({
 
 # 价格涨幅波动
 #@trace
-def avg_ch(time):
-    time_list = ["5m","15m","30m","1h","2h","4h","6h","12h","1d"]
-    limit_list = [2016,672,336,168,84,28,14,7]
-    if time not in time_list:
+def avg_ch(interval):
+    time_list = ["5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d"]
+    limit_list = [2016, 672, 336, 168, 84, 28, 14, 7]
+    if interval not in time_list:
         print('时间错误！')
         return
     else:
-        localimit = limit_list[time_list.index(time)]            
-    ohlcv = bn.fetchOHLCV(symbol,time,limit=localimit)
+        localimit = limit_list[time_list.index(interval)]            
+    ohlcv = bn.fetchOHLCV(symbol, interval, limit = localimit)
     ch_sum = 0
     for i in ohlcv:
-        ch_sum += abs(i[2]-i[3])
-    return int(ch_sum/len(ohlcv))
+        ch_sum += abs(i[2] - i[3])
+    return int(ch_sum / len(ohlcv))
 
 
 
@@ -309,6 +309,7 @@ def db_insert(data_info):
             'pos_price': order_info['average'],
             'amount': order_info['amount'],
             'order_id_list': list(),
+            'P&L': 0,
             'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(order_info['timestamp'] / 1000))
         }
     else:
@@ -342,7 +343,7 @@ def db_search(side, price):
 '''
 def order_check(order_id = None):
     if db.list_collection_names():
-        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(18))
+        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(10))
         start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['uptime']
         db_trade_list = list(trade_col.find({'uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
         # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
@@ -530,6 +531,8 @@ MARKET	                        quantity
 STOP, TAKE_PROFIT	            quantity, price, stopPrice
 STOP_MARKET, TAKE_PROFIT_MARKET	stopPrice
 TRAILING_STOP_MARKET	        callbackRate
+
+订单错误信息：binance {"code":-2021,"msg":"Order would immediately trigger."}
 '''
 def create_tpsl_order(type, ratio, price, poside):
     upperType = type.upper()
@@ -601,14 +604,19 @@ def create_tpsl_order(type, ratio, price, poside):
             })
             print('订单成功执行！')
             order_check(the_order['id'])
+            db_insert(the_order)
             break
         except Exception as e:
             print('订单执行异常，重试中！错误信息：{}'.format(e))
+            if re.search('2021', e):
+                if poside == 'LONG':
+                    stopPrice = price = int(0.99 * price)
+                else:
+                    stopPrice = price = int(1.01 * price)
             try_count -= 1
             if try_count == 0:
                 return
-            continue    
-    db_insert(the_order)
+            continue
     return the_order['id']
 
 # 取消订单，基于输入的内容和类型进行订单的取消
@@ -910,16 +918,18 @@ def Autotrading(side):
                 except:
                     pass
             order_check()
-            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))[0]           
+            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))[0]
+            PL = trade_info['trade_P&L'] - trade_info['trade_cost'] - order_cost           
             push_msg = {
                 '标题：': '{}订单已终止'.format(side),
                 '持仓价格：': pos_price,
                 '成交价格：': trade_info['trade_price'],
-                '盈亏情况：': trade_info['trade_P&L'] - trade_info['trade_cost'] - order_cost,
+                '盈亏情况：': PL,
                 '账户余额：': bn.fetch_total_balance()['USDT'],
                 '成交时间：': trade_info['uptime']
             }
             push_message(push_msg)
+            id_col.update_one({'main_id': threading.current_thread().name}, {'$set': {'P&L': PL}})
             print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         else:
             order_check()

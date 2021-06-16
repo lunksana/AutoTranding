@@ -617,7 +617,7 @@ def create_tpsl_order(type, ratio, price, poside):
             print('订单数量超过范围！')
             return
         else:
-            quantity = abs(round((fetch_positions(poside)['positionAmt'] * ratio), 3)) #持仓取正
+            quantity = abs(round((fetch_positions(poside)['pos_amt'] * ratio), 3)) #持仓取正
             # 保留三位小数
             if quantity == 0:
                 print('数值太小！')

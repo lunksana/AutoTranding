@@ -449,8 +449,8 @@ def make_order(btc_price, amount):
 
 
 # MA计算
-def ma(long, time):
-    ohlcv = bn.fetchOHLCV(symbol, time, limit = long + 2)
+def ma(long, interval):
+    ohlcv = bn.fetchOHLCV(symbol, interval, limit = long + 2)
     ohlcvsum = 0
     for i in range(0 - long, 0):
         ohlcvsum += ohlcv[i][4]
@@ -473,38 +473,73 @@ def ma(long, time):
  'symbol': 'BTCUSDT',
  'unRealizedProfit': '4.22747775'}
 '''
-def fetch_positions(symbol):
-    bn_symbol = symbol.replace('/','')
-    positions_list = []
-    for i in bn.fapiPrivateV2GetPositionRisk({'symbol': bn_symbol}):
-        if i != None:
-            if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
-                positions_list.append(i)
-    return positions_list
+# def fetch_positions(symbol):
+#     bn_symbol = symbol.replace('/','')
+#     positions_list = []
+#     for i in bn.fapiPrivateV2GetPositionRisk({'symbol': bn_symbol}):
+#         if i != None:
+#             if i['symbol'] == bn_symbol and float(i['entryPrice']) > 0:
+#                 positions_list.append(i)
+#     return positions_list
 
 def pos_status(side):
-    bn_symbol = symbol.replace('/','')
-    for pos in bn.fapiPrivateV2GetPositionRisk({'symbol': bn_symbol}):
-        if pos != None and pos['symbol'] == bn_symbol and float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
+    for pos in bn.fapiPrivateV2GetPositionRisk({'symbol': symbol.replace('/','')}):
+        if pos != None and float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
             return True
     return False
 
 # 建立持仓字典，方便查询
-def positions_info(position_list):
-    if len(position_list) > 1:
-        if position_list[0]['positionSide'] == 'LONG':
-            positions_info = dict(zip(['LONG','SHORT'],[position_list[0],position_list[1]]))
-        else:
-            positions_info = dict(zip(['SHORT','LONG'],[position_list[0],position_list[1]]))
-    elif len(position_list) == 0:
-        positions_info = None
+# def positions_info(position_list):
+#     if len(position_list) > 1:
+#         if position_list[0]['positionSide'] == 'LONG':
+#             positions_info = dict(zip(['LONG','SHORT'],[position_list[0],position_list[1]]))
+#         else:
+#             positions_info = dict(zip(['SHORT','LONG'],[position_list[0],position_list[1]]))
+#     elif len(position_list) == 0:
+#         positions_info = None
+#     else:
+#         positions_info = dict([(position_list[0]['positionSide'],position_list[0])])
+#     return positions_info 
+
+# 测试持仓情况
+# def check_positions(side = None):
+#     positions = positions_info(fetch_positions(symbol))
+#     format_pos = {}
+#     if positions != None and len(positions) >= 1:
+#         for pos_side in positions.keys():
+#             format_pos[pos_side] = {
+#                 'pos_price': float(positions[pos_side]['entryPrice']),
+#                 'pos_amt': float(positions[pos_side]['positionAmt']),
+#                 'pos_lq_price': float(positions[pos_side]['liquidationPrice']),
+#                 'pos_lev': int(positions[pos_side]['leverage']),
+#                 'pos_unp': float(positions[pos_side]['unRealizedProfit']),
+#                 'pos_wallet': float(positions[pos_side]['isolatedWallet'])
+#             }
+#         if side != None and side in positions.keys():
+#             return True
+#     else:
+#         return False
+#     return format_pos
+def fetch_positions(side):
+    format_pos = {}
+    for pos in bn.fapiPrivateV2GetPositionRisk({'symbol': symbol.replace('/','')}):
+        if float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
+            format_pos = {
+                'pos_price': float(pos['entryPrice']),
+                'pos_amt': float(pos['positionAmt']),
+                'pos_lq_price': float(pos['liquidationPice']),
+                'pos_lev': int(pos['leverage']),
+                'pos_unp': float(pos['unRealizedProfit']),
+                'pos_wallet': float(pos['isolatedWallet'])
+            }
+    if format_pos:
+        return format_pos
     else:
-        positions_info = dict([(position_list[0]['positionSide'],position_list[0])])
-    return positions_info 
+        return       
          
 # 修改杠杆
 def ch_lev(lev):
-    if len(fetch_positions(symbol)) > 0:
+    if fetch_positions('LONG') or fetch_positions('SHORT'):
         print('在持仓模式下无法修改杠杆！')
         return
     elif lev < 1 or lev > 125:
@@ -567,7 +602,6 @@ def create_tpsl_order(type, ratio, price, poside):
             return
         else:
             positionSide = poside
-            position = positions_info(fetch_positions(symbol))[poside]
             if poside == 'LONG':
                 side = 'SELL'
             else:
@@ -580,7 +614,7 @@ def create_tpsl_order(type, ratio, price, poside):
             print('订单数量超过范围！')
             return
         else:
-            quantity = abs(round((float(position['positionAmt']) * ratio), 3)) #持仓取正
+            quantity = abs(round((fetch_positions(poside)['positionAmt'] * ratio), 3)) #持仓取正
             # 保留三位小数
             if quantity == 0:
                 print('数值太小！')
@@ -671,26 +705,6 @@ def cancel_my_order(price, side, type):
  # 追踪策略
  # 基于持仓价格进行价格追踪，基于基础的价格进行网格操作，需要考虑持仓的时效性     
 
-# 测试持仓情况
-def check_positions(side = None):
-    positions = positions_info(fetch_positions(symbol))
-    format_pos = {}
-    if positions != None and len(positions) >= 1:
-        for pos_side in positions.keys():
-            format_pos[pos_side] = {
-                'pos_price': float(positions[pos_side]['entryPrice']),
-                'pos_amt': float(positions[pos_side]['positionAmt']),
-                'pos_lq_price': float(positions[pos_side]['liquidationPrice']),
-                'pos_lev': int(positions[pos_side]['leverage']),
-                'pos_unp': float(positions[pos_side]['unRealizedProfit']),
-                'pos_wallet': float(positions[pos_side]['isolatedWallet'])
-            }
-        if side != None and side in positions.keys():
-            return True
-    else:
-        return False
-    return format_pos
-
 
 # 价格追踪，输入初始持仓价格，优先设置止损位，之后使用等差数列预生成网格价格点位
 # def price_auto(pos_price, side, pos_lev):
@@ -773,8 +787,8 @@ def Autotrading(side):
     try:
         if pos_status(side):
             print('{}模式追踪函数启动时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-            pos_lev = check_positions()[side]['pos_lev']
-            pos_price = check_positions()[side]['pos_price']            
+            pos_lev = fetch_positions(side)['pos_lev']
+            pos_price = fetch_positions(side)['pos_price']            
             defense_order_dict = {}
             # defense_order_list = []
             #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
@@ -791,7 +805,7 @@ def Autotrading(side):
                     else:
                         sl_price = round(pos_price - pos_price * 0.12 / pos_lev, 2)
                         if not db_search(side, sl_price):
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side)#12%止损单
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
                             id_db(threading.current_thread().name, alert_order)
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
@@ -916,10 +930,11 @@ def Autotrading(side):
                     else:
                         time.sleep(5)
                         retry -= 1
-            for order_id in id_db(threading.current_thread().name):
+            for the_id in id_db(threading.current_thread().name):
                 try:
-                    bn.cancel_order(order_id, symbol)
-                except:
+                    bn.cancel_order(the_id, symbol)
+                except Exception as c:
+                    print(c)
                     pass
             order_check()
             trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))[0]
@@ -1194,7 +1209,7 @@ def main():
         print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
         print(schebg.get_jobs())
         time.sleep(300)
-     
+
 if __name__ == '__main__':
     # print('5m:',avg_ch('5m'))
     print('15m:',avg_ch('15m'))

@@ -308,6 +308,7 @@ def db_insert(data_info):
             'main_id': data_info,
             'pos_price': order_info['average'],
             'amount': order_info['amount'],
+            'pos_side': order_info['info']['positionSide'],
             'order_count': -2,
             'order_id_list': list(),
             'P&L': 0,
@@ -794,7 +795,11 @@ def Autotrading(side):
             defense_order_dict = {}
             # defense_order_list = []
             #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
-            order_cost = trade_col.find_one({'trade_id': threading.current_thread().name})['trade_cost']
+            if re.match(r'^[0-9]+$', threading.current_thread().name):
+                th_name = threading.current_thread().name
+            else:
+                th_name = list(id_db.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))['main_id']
+            order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.05 / pos_lev)
                 limit_price = pos_price + price_step
@@ -808,12 +813,12 @@ def Autotrading(side):
                         sl_price = round(pos_price - pos_price * 0.12 / pos_lev, 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
-                            id_db(threading.current_thread().name, alert_order)
+                            id_db(th_name, alert_order)
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price < limit_price:
                                 #adj_value = round((trigger_price - pos_price) / price_step) -1
-                                adj_value = max(id_col.find_one({'main_id': threading.current_thread().name})['order_count'], 0)
+                                adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
                                 pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
@@ -828,18 +833,18 @@ def Autotrading(side):
                                     if not defense_order.isdigit():
                                         continue
                                     # defense_order_list.append(defense_order)
-                                    id_db(threading.current_thread().name, defense_order)
+                                    id_db(th_name, defense_order)
                                     defense_order_dict[trigger_price] = defense_order
-                                    if len(id_db(threading.current_thread().name)) > 3:
-                                        id_list = id_db(threading.current_thread().name)
+                                    if len(id_db(th_name)) > 3:
+                                        id_list = id_db(th_name)
                                         bn.cancel_order(id_list[1], symbol)
                                         print('挂单{}已被取消！'.format(id_list[1]))
                                         del id_list[1]
-                                        id_db(threading.current_thread().name, order_id_list = id_list)
+                                        id_db(th_name, order_id_list = id_list)
                                 else:
                                     time.sleep(3)
                                     continue                            
-                                print(defense_price, id_db(threading.current_thread().name))
+                                print(defense_price, id_db(th_name))
                             else:
                                 if btc_price - limit_price > price_step:
                                     limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
@@ -879,12 +884,12 @@ def Autotrading(side):
                         sl_price = round(pos_price / (1 - 0.12 / pos_lev), 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
-                            id_db(threading.current_thread().name, alert_order)
+                            id_db(th_name, alert_order)
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             if btc_price > limit_price:
                                 #adj_value = round((pos_price - trigger_price) / price_step) - 1
-                                adj_value = max(id_col.find_one({'main_id': threading.current_thread().name})['order_count'], 0)
+                                adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
                                 pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
@@ -898,18 +903,18 @@ def Autotrading(side):
                                     if not defense_order.isdigit():
                                         continue
                                     # defense_order_list.append(defense_order)
-                                    id_db(threading.current_thread().name, defense_order)
+                                    id_db(th_name, defense_order)
                                     defense_order_dict[trigger_price] = defense_order
-                                    if len(id_db(threading.current_thread().name)) > 3:
-                                        id_list = id_db(threading.current_thread().name)
+                                    if len(id_db(th_name)) > 3:
+                                        id_list = id_db(th_name)
                                         bn.cancel_order(id_list[1], symbol)
                                         print('挂单{}已被取消！'.format(id_list[1]))
                                         del id_list[1]
-                                        id_db(threading.current_thread().name, order_id_list = id_list)
+                                        id_db(th_name, order_id_list = id_list)
                                 else:
                                     time.sleep(3)
                                     continue
-                                print(defense_price, id_db(threading.current_thread().name))
+                                print(defense_price, id_db(th_name))
                             else:
                                 if limit_price - btc_price > price_step:
                                     limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
@@ -932,7 +937,7 @@ def Autotrading(side):
                     else:
                         time.sleep(5)
                         retry -= 1
-            for the_id in id_db(threading.current_thread().name):
+            for the_id in id_db(th_name):
                 try:
                     bn.cancel_order(the_id, symbol)
                 except Exception as c:
@@ -950,7 +955,7 @@ def Autotrading(side):
                 '成交时间：': trade_info['uptime']
             }
             push_message(push_msg)
-            id_col.update_one({'main_id': threading.current_thread().name}, {'$set': {'P&L': PL}})
+            id_col.update_one({'main_id': th_name}, {'$set': {'P&L': PL}})
             print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         else:
             order_check()

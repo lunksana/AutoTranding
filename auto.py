@@ -482,9 +482,11 @@ def ma(long, interval):
 #                 positions_list.append(i)
 #     return positions_list
 
-def pos_status(side):
+def pos_status(side = None):
     for pos in bn.fapiPrivateV2GetPositionRisk({'symbol': symbol.replace('/','')}):
-        if pos != None and float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
+        if side == None and float(pos['entryPrice']) > 0:
+            return True
+        elif float(pos['entryPrice']) > 0 and pos['positionSide'] == side:
             return True
     return False
 
@@ -527,7 +529,7 @@ def fetch_positions(side):
             format_pos = {
                 'pos_price': float(pos['entryPrice']),
                 'pos_amt': float(pos['positionAmt']),
-                'pos_lq_price': float(pos['liquidationPice']),
+                'pos_lq_price': float(pos['liquidationPrice']),
                 'pos_lev': int(pos['leverage']),
                 'pos_unp': float(pos['unRealizedProfit']),
                 'pos_wallet': float(pos['isolatedWallet'])
@@ -539,7 +541,7 @@ def fetch_positions(side):
          
 # 修改杠杆
 def ch_lev(lev):
-    if fetch_positions('LONG') or fetch_positions('SHORT'):
+    if pos_status():
         print('在持仓模式下无法修改杠杆！')
         return
     elif lev < 1 or lev > 125:

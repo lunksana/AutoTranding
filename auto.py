@@ -646,8 +646,8 @@ def create_tpsl_order(type, ratio, price, poside):
             db_insert(the_order)
             break
         except Exception as e:
-            print('订单执行异常，重试中！错误信息：{}'.format(e))
-            if re.search('2021', e):
+            print('订单执行异常，重试中！错误信息：{}'.format(e), type(e))
+            if re.search('2021', str(e)):
                 if poside == 'LONG':
                     stopPrice = price = int(0.99 * price)
                 else:

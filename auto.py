@@ -798,7 +798,7 @@ def Autotrading(side):
             if re.match(r'^[0-9]+$', threading.current_thread().name):
                 th_name = threading.current_thread().name
             else:
-                th_name = list(id_db.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))['main_id']
+                th_name = list(id_col.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))['main_id']
             order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.05 / pos_lev)

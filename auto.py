@@ -310,6 +310,7 @@ def db_insert(data_info):
             'amount': order_info['amount'],
             'pos_side': order_info['info']['positionSide'],
             'order_count': -2,
+            'order_price_list': list(),
             'order_id_list': list(),
             'P&L': 0,
             'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(order_info['timestamp'] / 1000))
@@ -416,22 +417,27 @@ def db_del(db_col = None):
         return del_count    
         
 # 自动建立每个订单后续生成的订单
-def id_db(main_id, order_id = None, order_id_list = None):
-    if order_id != None and order_id_list != None:
+def id_db(main_id, order_id = None, order_price = None, order_id_list = None):
+    if not re.match(r'^[0-9]+$', main_id) or not re.match(r'^[0-9]+$', order_id) or not isinstance(order_price, int) or not isinstance(order_id_list, list):
+    #if order_id != None and order_id_list != None:
         return
     elif id_col.find_one({'main_id': main_id}):
         id_list = id_col.find_one({'main_id': main_id})['order_id_list']
+        price_list = id_col.find_one({'main_id': main_id})['order_price_list']
         if order_id != None and order_id not in id_list:
             id_list.append(order_id)
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': id_list}})
             id_col.update_one({'main_id': main_id}, {'$inc': {'order_count': 1}})
-        elif isinstance(order_id_list, list):
+        if order_price != None and order_price not in price_list:
+            price_list.append(order_price)
+            id_col.update_one({'main_id': main_id}, {'$set': {'order_price_list': price_list}})
+        if order_id_list != None:
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': order_id_list}})
         else:
             return id_list
     else:
         db_insert(main_id)
-        id_db(main_id, order_id, order_id_list)
+        id_db(main_id, order_id, order_price, order_id_list)
     return
 
 # 开单
@@ -792,7 +798,7 @@ def Autotrading(side):
             print('{}模式追踪函数启动时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             pos_lev = fetch_positions(side)['pos_lev']
             pos_price = fetch_positions(side)['pos_price']            
-            defense_order_dict = {}
+            #defense_order_dict = {}
             # defense_order_list = []
             #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
             if re.match(r'^[0-9]+$', threading.current_thread().name):
@@ -828,13 +834,13 @@ def Autotrading(side):
                                     defense_price = int(pos_price + pos_price * pt / pos_lev)
                                     # if abs(defense_price - pos_price) < 1:
                                     #     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
-                                if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
+                                if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                     if not defense_order.isdigit():
                                         continue
                                     # defense_order_list.append(defense_order)
-                                    id_db(th_name, defense_order)
-                                    defense_order_dict[trigger_price] = defense_order
+                                    id_db(th_name, defense_order, defense_price)
+                                    #defense_order_dict[trigger_price] = defense_order
                                     if len(id_db(th_name)) > 3:
                                         id_list = id_db(th_name)
                                         bn.cancel_order(id_list[1], symbol)
@@ -898,13 +904,13 @@ def Autotrading(side):
                                     # defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
                                     # if abs(defense_price - pos_price) < 1:
                                     #     defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
-                                if trigger_price not in defense_order_dict.keys() and not db_search(side, defense_price):
+                                if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
                                     if not defense_order.isdigit():
                                         continue
                                     # defense_order_list.append(defense_order)
-                                    id_db(th_name, defense_order)
-                                    defense_order_dict[trigger_price] = defense_order
+                                    id_db(th_name, defense_order, defense_price)
+                                    #defense_order_dict[trigger_price] = defense_order
                                     if len(id_db(th_name)) > 3:
                                         id_list = id_db(th_name)
                                         bn.cancel_order(id_list[1], symbol)

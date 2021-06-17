@@ -418,20 +418,20 @@ def db_del(db_col = None):
         
 # 自动建立每个订单后续生成的订单
 def id_db(main_id, order_id = None, order_price = None, order_id_list = None):
-    if not re.match(r'^[0-9]+$', main_id) or not re.match(r'^[0-9]+$', order_id) or not isinstance(order_price, int) or not isinstance(order_id_list, list):
+    if not re.match(r'^[0-9]+$', main_id):
     #if order_id != None and order_id_list != None:
         return
     elif id_col.find_one({'main_id': main_id}):
         id_list = id_col.find_one({'main_id': main_id})['order_id_list']
         price_list = id_col.find_one({'main_id': main_id})['order_price_list']
-        if order_id != None and order_id not in id_list:
+        if order_id != None and order_id not in id_list and re.match(r'^[0-9]+$', order_id):
             id_list.append(order_id)
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': id_list}})
             id_col.update_one({'main_id': main_id}, {'$inc': {'order_count': 1}})
-        if order_price != None and order_price not in price_list:
+        if order_price != None and order_price not in price_list and isinstance(order_price, int):
             price_list.append(order_price)
             id_col.update_one({'main_id': main_id}, {'$set': {'order_price_list': price_list}})
-        if order_id_list != None:
+        if order_id_list != None and isinstance(order_id_list, list):
             id_col.update_one({'main_id': main_id}, {'$set': {'order_id_list': order_id_list}})
         else:
             return id_list

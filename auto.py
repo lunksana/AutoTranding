@@ -651,9 +651,9 @@ def create_tpsl_order(type, ratio, price, poside):
             order_check(the_order['id'])
             db_insert(the_order)
             break
-        except Exception as e:
-            print('订单执行异常，重试中！错误信息：{}'.format(e), type(e))
-            if re.search('2021', str(e)):
+        except Exception as a:
+            print('订单执行异常，重试中！错误信息：{}'.format(a), type(a))
+            if re.search('2021', str(a)):
                 if poside == 'LONG':
                     stopPrice = price = int(0.99 * price)
                 else:
@@ -797,7 +797,8 @@ def Autotrading(side):
         if pos_status(side):
             print('{}模式追踪函数启动时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             pos_lev = fetch_positions(side)['pos_lev']
-            pos_price = fetch_positions(side)['pos_price']            
+            pos_price = fetch_positions(side)['pos_price'] 
+            retry = 5           
             #defense_order_dict = {}
             # defense_order_list = []
             #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
@@ -810,7 +811,6 @@ def Autotrading(side):
                 price_step = int(pos_price * 0.05 / pos_lev)
                 limit_price = pos_price + price_step
                 trigger_price = pos_price
-                retry = 5
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.12 / pos_lev:
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
@@ -836,7 +836,7 @@ def Autotrading(side):
                                     #     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                                 if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                    if not defense_order.isdigit():
+                                    if defense_order == None:
                                         continue
                                     # defense_order_list.append(defense_order)
                                     id_db(th_name, defense_order, defense_price)
@@ -881,7 +881,6 @@ def Autotrading(side):
                 price_step = pos_price / 1.05 * 0.05 / pos_lev
                 limit_price = pos_price - price_step
                 trigger_price = pos_price
-                retry = 5
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.12 / pos_lev):
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
@@ -906,7 +905,7 @@ def Autotrading(side):
                                     #     defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
                                 if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                    if not defense_order.isdigit():
+                                    if defense_order == None:
                                         continue
                                     # defense_order_list.append(defense_order)
                                     id_db(th_name, defense_order, defense_price)
@@ -1005,6 +1004,27 @@ def get_side(q_out):
         q_out.put((None, side, event))
         event.set()
         return
+
+def pos_monitoring(q_out):
+    if pos_status():
+        time.sleep(3)
+        if len([nu for nu in threading.enumerate() if re.match(r'^[0-9]+$', nu.getName()) or re.match(r'^Thread-*', nu.getName())]) <= 0:
+            if pos_status('LONG'):
+                th_side = 'LONG'
+            else:
+                th_side = 'SHORT'
+            trade_price = fetch_positions(th_side)['pos_price']
+            for tra in bn.fetch_my_trades(symbol, limit = 5):
+                if tra['price'] == trade_price:
+                    order_id = tra['order']
+                    event = threading.Event()
+                    q_out.put((order_id, th_side, event))
+                    event.set()
+        else:
+            return
+    else:
+        return
+                    
 
 
 # 使用event.wait()作为线程等待，当子线程执行event.set()之后即停止阻塞，实现了线程相应
@@ -1217,10 +1237,10 @@ def main():
             th_names = [nm.getName() for nm in threading.enumerate()]
             if len([x for x in th_names if th_value.match(x)]) < 1:
                 threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
-            time.sleep(60)
+            time.sleep(10)
         pprint(threading.enumerate())
         print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-        print(schebg.get_jobs())
+        pprint(schebg.get_jobs())
         time.sleep(300)
 
 if __name__ == '__main__':

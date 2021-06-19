@@ -461,6 +461,14 @@ def ma(long, interval):
         ohlcvsum += ohlcv[i][4]
     return ohlcvsum / long
 
+# 历史MA计算(测试阶段)
+def hisma(long, histime, interval):
+    hisohl = bn.fetchOHLCV(symbol, interval, limit = long + histime)
+    ohlsum = 0
+    for x in hisohl[0:long]:
+        ohlsum += x[4]
+    return ohlsum / long
+
 # 获取当前持仓
 '''
 获取的持仓信息
@@ -1231,7 +1239,7 @@ def main():
             if not schebg.get_jobs():
                 schebg.add_job(get_side, 'cron', args = [que], minute = '*/15', second = 30, name = 'sched')
                 schebg.add_job(db_del, 'cron', day = '*/15', name = 'del_expired_db')
-                schebg.add_job(pos_monitoring, 'cron', args = [que], minute = '*/1', name = 'position_monitoring')
+                #schebg.add_job(pos_monitoring, 'cron', args = [que], minute = '*/1', name = 'position_monitoring')
             th_value = re.compile(r'^thread\-[0-9]+$')
             th_names = [nm.getName() for nm in threading.enumerate()]
             if len([x for x in th_names if th_value.match(x)]) < 1:

@@ -832,7 +832,8 @@ def Autotrading(side):
                             if btc_price < limit_price:
                                 #adj_value = round((trigger_price - pos_price) / price_step) -1
                                 adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
-                                pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
+                                #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
+                                pt = (0.03 + (0.05 + 0.005 * adj_value) * adj_value) * 0.618
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
                                 else:
@@ -886,7 +887,7 @@ def Autotrading(side):
                         retry -= 1
             else:
                 price_step = pos_price / 1.05 * 0.05 / pos_lev
-                limit_price = pos_price - price_step
+                limit_price = pos_price - pos_price / 1.03 * 0.03 / pos_lev
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.12 / pos_lev):
@@ -902,7 +903,8 @@ def Autotrading(side):
                             if btc_price > limit_price:
                                 #adj_value = round((pos_price - trigger_price) / price_step) - 1
                                 adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
-                                pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
+                                #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
+                                pt = (0.03 + (0.05 + 0.005 * adj_value) * adj_value) * 0.618
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
                                 else:
@@ -992,11 +994,11 @@ def get_side(q_out):
     side = None
     for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
         mid_price = int((max(ohl[x][2], ohl[y][2], ohl[z][2]) + min(ohl[x][3], ohl[y][3], ohl[z][3])) / 2)
-        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m') and hisma(3, 2, '15m') < ohl[x][4]:
+        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m') * (1 - 0.01 / leverage) and hisma(3, 2, '15m') < ohl[x][4]:
             side = 'SHORT'
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
-        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m') and hisma(3, 2, '15m') > ohl[x][4]:
+        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m') * (1 + 0.01 / leverage) and hisma(3, 2, '15m') > ohl[x][4]:
             side = 'LONG' 
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])

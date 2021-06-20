@@ -462,12 +462,13 @@ def ma(long, interval):
     return ohlcvsum / long
 
 # 历史MA计算(测试阶段)
-def hisma(long, histime, interval):
-    hisohl = bn.fetchOHLCV(symbol, interval, limit = long + histime)
+def hisma(long, span, interval):
+    hisohl = bn.fetchOHLCV(symbol, interval, limit = long + span)
     ohlsum = 0
     for x in hisohl[0:long]:
         ohlsum += x[4]
     return ohlsum / long
+
 
 # 获取当前持仓
 '''
@@ -815,7 +816,7 @@ def Autotrading(side):
             order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.05 / pos_lev)
-                limit_price = pos_price + price_step
+                limit_price = pos_price + int(pos_price * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.12 / pos_lev:
@@ -991,11 +992,11 @@ def get_side(q_out):
     side = None
     for x, y, z in zip(range(0, len(ohl) - 2), range(1, len(ohl) - 1), range(2, len(ohl))):
         mid_price = int((max(ohl[x][2], ohl[y][2], ohl[z][2]) + min(ohl[x][3], ohl[y][3], ohl[z][3])) / 2)
-        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m') and ohl[z][4] < ohl[z][1]:
+        if ohl[x][4] > ohl[x][1] and ohl[y][1] > ohl[y][4] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] < ma(3, '15m') and hisma(3, 2, '15m') < ohl[x][4]:
             side = 'SHORT'
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
-        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m') and ohl[z][4] > ohl[z][1]:
+        elif ohl[x][1] > ohl[x][4] and ohl[y][4] > ohl[y][1] and abs(ohl[x][4] - ohl[y][1]) < 1 and ohl[z][4] > ma(3, '15m') and hisma(3, 2, '15m') > ohl[x][4]:
             side = 'LONG' 
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])

@@ -450,8 +450,164 @@ def make_order(btc_price, amount):
     order_check(order_id)
     return order_id
         
-    
+def place_order(param):
+    return bn.fapiPrivate_post_order(param)   
 
+# def create_pos():
+#         def create_pos(self, data):
+#         sym = data['symbol']
+#         if data['price'] == '市价':
+#             res = brkrs.fetch_symbol_price(sym)
+#             price = float(res['price'])
+#             order_type = 'MARKET'
+#         else:
+#             price = float(data['price']) #fix price
+#             order_type = 'LIMIT'
+#         for an in data['vas']:
+#             self._set_lev(an, data)
+#             acct_equ = brkrs.all_equ[an]
+#             margin_rate = float(data['mr'][:-1])/100
+#             margin = acct_equ*margin_rate
+#             quote = margin*float(data['lev'])
+#             qp = brkrs.sym_infos[sym]['qp']
+#             qty = round(quote/price,qp)
+#             qty = max(qty,1/pow(10,qp))
+
+#             rstr = base62.encode(int(datetime.now().timestamp()))
+#             param = {
+#                 'symbol': sym,
+#                 'side': data['side'],
+#                 'positionSide': data['positionSide'],
+#                 'type': order_type,
+#                 'quantity': qty,
+#                 'newClientOrderId': f"{app}_{data['op']}_{rstr}", 
+#             }
+#             if order_type == 'LIMIT': 
+#                 param['price'] = price
+#                 param['timeInForce'] = 'GTC'
+#             res = brkrs.place_order(an, param)
+#             if res['orderId']:
+#                 op_ch = get_op(data['op'])
+#                 Lgr.log(data['op'],f"账户:{an} {op_ch}: {param}")
+#             else:
+#                 Lgr.log('ERROR','place order has error')
+
+#     def close_pos(self, data):
+#         sym = data['symbol']
+#         if data['price'] == '市价':
+#             res = brkrs.fetch_symbol_price(sym)
+#             price = float(res['price'])
+#             order_type = 'MARKET'
+#         else:
+#             price = float(data['price']) #fix price
+#             order_type = 'LIMIT'
+#         for an in data['vas']:
+#             qp = brkrs.sym_infos[sym]['qp']
+#             close_rate = float(data['cr'][:-1])/100
+#             pos_amt = 0
+#             for pos in brkrs.all_valid_pos[an]:
+#                 if pos['symbol'] == sym and pos['positionSide'] == data['positionSide']:
+#                     pos_amt = float(pos['positionAmt'])
+#             if not pos_amt:
+#                 Lgr.log('bnews', f'账户 {an} 没有找到对应仓位')
+#                 return
+#             qty = round(abs(pos_amt)*close_rate,qp)
+#             qty = max(qty,1/pow(10,qp))
+#             rstr = base62.encode(int(datetime.now().timestamp()))
+#             param = {
+#                 'symbol': sym,
+#                 'side': data['side'],
+#                 'positionSide': data['positionSide'],
+#                 'type': order_type,
+#                 'quantity': qty,
+#                 'newClientOrderId': f"{app}_{data['op']}_{rstr}", 
+#             }
+#             if order_type == 'LIMIT': 
+#                 param['price'] = price
+#                 param['timeInForce'] = 'GTC'
+#             res = brkrs.place_order(an, param)
+#             if res['orderId']:
+#                 op_ch = get_op(data['op'])
+#                 Lgr.log(data['op'],f"账户:{an} {op_ch}: {param}")
+#             else:
+#                 Lgr.log('ERROR','place order has error')
+
+
+#     def cancel_porders(self, porder_df, idxs):
+#         for idx in idxs.split(' '):
+#             order = porder_df.iloc[int(idx)]
+#             param = {
+#                 "symbol": order['symbol'],
+#                 "orderId": order['orderId']
+#             }
+#             res = brkrs.cancel_porder(order['账户'],param)
+#             if res and res['orderId']:
+#                 Lgr.log('SUCCESS',f"撤销订单 {res['symbol']} {res['clientOrderId']} 成功")
+
+
+#     def create_stop_order(self, data):
+#         sym = data['symbol']
+#         for an in data['vas']:
+#             rstr = base62.encode(int(datetime.now().timestamp()))
+#             param = {
+#                 'symbol': sym,
+#                 'side': data['side'],
+#                 'positionSide': data['positionSide'],
+#                 'type': 'STOP_MARKET',
+#                 'newClientOrderId': f"{app}_stplos_{rstr}", 
+#                 'stopPrice': data['price'],
+#                 'closePosition': True,
+#                 'workingType': 'MARK_PRICE'
+#             }
+#             res = brkrs.place_order(an, param)
+#             if res['orderId']:
+#                 op_ch = get_op(data['op'])
+#                 Lgr.log(data['op'],f"账户:{an} {op_ch}: {param}")
+#             else:
+#                 Lgr.log('ERROR','place order has error')
+
+#     # 下 LIMIT 止盈单
+#     def create_pfhl_order(self, data):
+#         stp_p = float(data['price'])
+#         sym = data['symbol']
+#         pside = data['positionSide']
+        
+#         for an in data['vas']:
+#             pp = brkrs.sym_infos[sym]['pp']
+#             qp = brkrs.sym_infos[sym]['qp']
+#             close_rate = 0.5
+#             pos_amt = 0
+#             brkrs.fetch_postion(an)
+#             for pos in brkrs.all_valid_pos[an]:
+#                 if pos['symbol'] == sym and pos['positionSide'] == pside:
+#                     pos_amt = float(pos['positionAmt'])
+#                     entry_p = float(pos['entryPrice'])
+#             if not pos_amt:
+#                 Lgr.log('bnews', f"账户 {an} {sym} 没有 {pside} 仓位")
+#                 continue
+#             if pside == 'LONG':
+#                 price = round(abs(entry_p-stp_p)+entry_p*(1+Settings['slippage']),pp)
+#             else:
+#                 price = round(entry_p*(1-Settings['slippage'])-abs(entry_p-stp_p),pp)
+#             qty = round(abs(pos_amt)*close_rate,qp)
+#             qty = max(qty,1/pow(10,qp))
+#             rstr = base62.encode(int(datetime.now().timestamp()))
+#             param = {
+#                 'symbol': sym,
+#                 'side': data['side'],
+#                 'positionSide': pside,
+#                 'price': price,
+#                 'type': 'LIMIT',
+#                 'timeInForce': 'GTC',
+#                 'quantity': qty,
+#                 'newClientOrderId': f"{app}_{data['op']}_{rstr}", 
+#             }
+#             res = brkrs.place_order(an, param)
+#             if res['orderId']:
+#                 op_ch = get_op(data['op'])
+#                 Lgr.log(data['op'],f"账户:{an} {op_ch}: {param}")
+#             else:
+#                 Lgr.log('ERROR','place order has error')
 
 # MA计算
 def ma(long, interval):
@@ -816,7 +972,7 @@ def Autotrading(side):
             order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.05 / pos_lev)
-                limit_price = pos_price + int(pos_price * 0.03 / pos_lev)
+                limit_price = int(pos_price + pos_price * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.12 / pos_lev:
@@ -856,7 +1012,7 @@ def Autotrading(side):
                                         del id_list[1]
                                         id_db(th_name, order_id_list = id_list)
                                 else:
-                                    time.sleep(3)
+                                    time.sleep(1.5)
                                     continue                            
                                 print(defense_price, id_db(th_name))
                             else:
@@ -886,8 +1042,8 @@ def Autotrading(side):
                         time.sleep(5)
                         retry -= 1
             else:
-                price_step = pos_price / 1.05 * 0.05 / pos_lev
-                limit_price = pos_price - pos_price / 1.03 * 0.03 / pos_lev
+                price_step = int(pos_price / 1.05 * 0.05 / pos_lev)
+                limit_price = int(pos_price - pos_price / 1.03 * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.12 / pos_lev):
@@ -926,7 +1082,7 @@ def Autotrading(side):
                                         del id_list[1]
                                         id_db(th_name, order_id_list = id_list)
                                 else:
-                                    time.sleep(3)
+                                    time.sleep(1.5)
                                     continue
                                 print(defense_price, id_db(th_name))
                             else:

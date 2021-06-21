@@ -662,9 +662,9 @@ def create_tpsl_order(type, ratio, price, poside):
             print('订单执行异常，重试中！错误信息：{}'.format(a))
             if re.search('2021', str(a)):
                 if poside == 'LONG':
-                    stopPrice = price = int(0.99 * price)
+                    stopPrice = price = int(0.999 * price)
                 else:
-                    stopPrice = price = int(1.01 * price)
+                    stopPrice = price = int(1.001 * price)
             try_count -= 1
             if try_count == 0:
                 return
@@ -833,7 +833,7 @@ def Autotrading(side):
                                 #adj_value = round((trigger_price - pos_price) / price_step) -1
                                 adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
                                 #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
-                                pt = (0.02 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
+                                pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
                                 else:
@@ -904,7 +904,7 @@ def Autotrading(side):
                                 #adj_value = round((pos_price - trigger_price) / price_step) - 1
                                 adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
                                 #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
-                                pt = (0.02 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
+                                pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
                                 else:

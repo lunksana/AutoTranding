@@ -1431,8 +1431,6 @@ def main():
         pprint(schebg.get_jobs())
         time.sleep(300)
 
-print(bn.fetch_ticker(symbol)['last'])
-exit()
 if __name__ == '__main__':
     # print('5m:',avg_ch('5m'))
     print('15m:',avg_ch('15m'))

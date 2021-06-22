@@ -453,6 +453,7 @@ def make_order(btc_price, amount):
 def place_order(param):
     return bn.fapiPrivate_post_order(param)   
 
+
 # def create_pos():
 #         def create_pos(self, data):
 #         sym = data['symbol']

@@ -985,9 +985,9 @@ def Autotrading(side):
                             id_db(th_name, alert_order)
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
+                            adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
                             if btc_price < limit_price:
-                                #adj_value = round((trigger_price - pos_price) / price_step) -1
-                                adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
+                                #adj_value = round((trigger_price - pos_price) / price_step) -1                                
                                 #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
                                 pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
                                 if trigger_price <= pos_price:
@@ -1000,7 +1000,7 @@ def Autotrading(side):
                                     #     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                                 if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                    if defense_order == None:
+                                    if not defense_order:
                                         continue
                                     # defense_order_list.append(defense_order)
                                     id_db(th_name, defense_order, defense_price)
@@ -1012,15 +1012,26 @@ def Autotrading(side):
                                         del id_list[1]
                                         id_db(th_name, order_id_list = id_list)
                                 else:
-                                    time.sleep(1.5)
+                                    time.sleep(1)
                                     continue                            
                                 print(defense_price, id_db(th_name))
                             else:
                                 if btc_price - limit_price > price_step:
                                     limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
+                                    trigger_price = limit_price - price_step
                                 else:
+                                    trigger_price = limit_price
                                     limit_price += price_step
-                                trigger_price = limit_price - price_step
+                                if int(pos_price + pos_price * 0.03 / pos_lev + adj_value * price_step) < trigger_price:
+                                    right_order_count = (trigger_price - int(pos_price * (0.03 / pos_lev + 1))) / price_step
+                                    test_price = int(pos_price + pos_price * (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev)
+                                    if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
+                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
+                                        if not stress_order:
+                                            continue
+                                        else:
+                                            id_db(th_name, stress_order, test_price)
+                                            id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
                         # elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.12 / pos_lev) and len(defense_order_list) < 1:
                         #     if not pos_status('SHORT'):
                         #         order_id = auto_create('SHORT', 'm9')
@@ -1035,15 +1046,15 @@ def Autotrading(side):
                         #     create_time = time.time()
                     print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
-                        time.sleep(10)
+                        time.sleep(5)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                         retry = 5
                     else:
-                        time.sleep(5)
+                        time.sleep(3)
                         retry -= 1
             else:
                 price_step = int(pos_price / 1.05 * 0.05 / pos_lev)
-                limit_price = int(pos_price - pos_price / 1.03 * 0.03 / pos_lev)
+                limit_price = pos_price - int(pos_price / 1.03 * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.12 / pos_lev):
@@ -1056,9 +1067,9 @@ def Autotrading(side):
                             id_db(th_name, alert_order)
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
+                            adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
                             if btc_price > limit_price:
                                 #adj_value = round((pos_price - trigger_price) / price_step) - 1
-                                adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
                                 #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
                                 pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
                                 if trigger_price >= pos_price:
@@ -1070,7 +1081,7 @@ def Autotrading(side):
                                     #     defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
                                 if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                     defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                    if defense_order == None:
+                                    if not defense_order:
                                         continue
                                     # defense_order_list.append(defense_order)
                                     id_db(th_name, defense_order, defense_price)
@@ -1082,15 +1093,26 @@ def Autotrading(side):
                                         del id_list[1]
                                         id_db(th_name, order_id_list = id_list)
                                 else:
-                                    time.sleep(1.5)
+                                    time.sleep(1)
                                     continue
                                 print(defense_price, id_db(th_name))
                             else:
                                 if limit_price - btc_price > price_step:
                                     limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
+                                    trigger_price = limit_price + price_step
                                 else:
+                                    trigger_price = limit_price
                                     limit_price -= price_step
-                                trigger_price = limit_price + price_step
+                                if int(pos_price - pos_price / 1.03 * 0.03 / pos_lev - price_step * adj_value) > trigger_price:
+                                    right_order_count = (pos_price - int(pos_price / 1.03 * 0.03 / pos_lev) - trigger_price) / price_step 
+                                    test_price = int(pos_price / ( 1 + (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev))
+                                    if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
+                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
+                                        if not stress_order:
+                                            continue
+                                        else:
+                                            id_db(th_name, stress_order, test_price)
+                                            id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
                         # elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
                         #     if not pos_status('LONG'):
                         #         order_id= auto_ycreate('LONG', 'm9')
@@ -1101,11 +1123,11 @@ def Autotrading(side):
                         #         break
                     print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
-                        time.sleep(10)
+                        time.sleep(5)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                         retry = 5
                     else:
-                        time.sleep(5)
+                        time.sleep(3)
                         retry -= 1
             for the_id in id_db(th_name):
                 try:
@@ -1409,6 +1431,8 @@ def main():
         pprint(schebg.get_jobs())
         time.sleep(300)
 
+print(bn.fetch_ticker(symbol)['last'])
+exit()
 if __name__ == '__main__':
     # print('5m:',avg_ch('5m'))
     print('15m:',avg_ch('15m'))

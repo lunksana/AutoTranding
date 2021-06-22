@@ -1032,6 +1032,9 @@ def Autotrading(side):
                                         else:
                                             id_db(th_name, stress_order, test_price)
                                             id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
+                        elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.06 / pos_lev) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('SHORT'):
+                            reverse_order = auto_create('SHORT', 'm10')
+                            threading.Thread(target = Autotrading ,args = ('SHORT',), name = reverse_order).start()
                         # elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.12 / pos_lev) and len(defense_order_list) < 1:
                         #     if not pos_status('SHORT'):
                         #         order_id = auto_create('SHORT', 'm9')
@@ -1113,6 +1116,9 @@ def Autotrading(side):
                                         else:
                                             id_db(th_name, stress_order, test_price)
                                             id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
+                        elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.06 / pos_lev)) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('LONG'):
+                            reverse_order = auto_create('LONG', 'm10')
+                            threading.Thread(target = Autotrading ,args = ('LONG',), name = reverse_order).start()
                         # elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
                         #     if not pos_status('LONG'):
                         #         order_id= auto_ycreate('LONG', 'm9')

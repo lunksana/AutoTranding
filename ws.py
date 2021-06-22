@@ -21,7 +21,7 @@ def on_message(ws, msg):
 def on_error(ws, error):
     print(f'on error: {error}')
 
-wss_url = 'wss://fstream.binance.com/ws'
+wss_url = 'wss://fstream.binance.com/ws/btcusdt@kline_15m'
 ws = websocket.WebSocketApp(
     wss_url,
     on_open = on_open,
@@ -30,4 +30,4 @@ ws = websocket.WebSocketApp(
     on_error = on_error
 )
 
-ws.run_forever(ping_interval = 15)
+ws.run_forever(ping_interval = 1)

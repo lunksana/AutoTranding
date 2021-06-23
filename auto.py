@@ -797,211 +797,211 @@ def auto_create(side, mod):
 # 价格低于持仓价格的时候，建立25%的止损单，当价格超越持仓价格之后，进行追踪，每触发一个价格自动取消上一个止损单，并建立
 # 一个新的止损点，并最终建立合适的止盈单
 def Autotrading(side):
-    # try:
-    if pos_status(side):
-        print('{}模式追踪函数启动时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        pos_lev = fetch_positions(side)['pos_lev']
-        pos_price = fetch_positions(side)['pos_price'] 
-        retry = 5           
-        #defense_order_dict = {}
-        # defense_order_list = []
-        #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
-        if re.match(r'^[0-9]+$', threading.current_thread().name):
-            th_name = threading.current_thread().name
-        else:
-            th_name = list(id_col.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))['main_id']
-        order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
-        if side == 'LONG':
-            price_step = int(pos_price * 0.05 / pos_lev)
-            limit_price = int(pos_price + pos_price * 0.03 / pos_lev)
-            trigger_price = pos_price
-            while pos_status(side):
-                if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.1 / pos_lev:
-                    create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
-                    break
-                else:
-                    sl_price = round(pos_price - pos_price * 0.1 / pos_lev, 2)
-                    if not db_search(side, sl_price):
-                        alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
-                        id_db(th_name, alert_order)
-                    if bn.fetch_ticker(symbol)['last'] > trigger_price:
-                        btc_price = bn.fetch_ticker(symbol)['last']
-                        adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
-                        if btc_price < limit_price:
-                            #adj_value = round((trigger_price - pos_price) / price_step) -1                                
-                            #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
-                            pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
-                            if trigger_price <= pos_price:
-                                defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
-                            else:
-                                #defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
-                                #defense_price = int(pos_price * (1 + (0.06 + 0.03 * adj_value) / pos_lev))
-                                defense_price = int(pos_price + pos_price * pt / pos_lev)
-                                # if abs(defense_price - pos_price) < 1:
-                                #     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
-                            if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                if not defense_order:
-                                    continue
-                                # defense_order_list.append(defense_order)
-                                id_db(th_name, defense_order, defense_price)
-                                #defense_order_dict[trigger_price] = defense_order
-                                if len(id_db(th_name)) > 3:
-                                    id_list = id_db(th_name)
-                                    bn.cancel_order(id_list[1], symbol)
-                                    print('挂单{}已被取消！'.format(id_list[1]))
-                                    del id_list[1]
-                                    id_db(th_name, order_id_list = id_list)
-                            else:
-                                time.sleep(1)
-                                continue                            
-                            print(defense_price, id_db(th_name))
-                        else:
-                            if btc_price - limit_price > price_step:
-                                limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
-                                trigger_price = limit_price - price_step
-                            else:
-                                trigger_price = limit_price
-                                limit_price += price_step
-                            if int(pos_price + pos_price * 0.03 / pos_lev + adj_value * price_step) < trigger_price:
-                                right_order_count = (trigger_price - int(pos_price * (0.03 / pos_lev + 1))) / price_step
-                                test_price = int(pos_price + pos_price * (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev)
-                                if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                    stress_order = create_tpsl_order('STOP', 1, test_price, side)
-                                    if not stress_order:
+    try:
+        if pos_status(side):
+            print('{}模式追踪函数启动时间：'.format(side), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            pos_lev = fetch_positions(side)['pos_lev']
+            pos_price = fetch_positions(side)['pos_price'] 
+            retry = 5           
+            #defense_order_dict = {}
+            # defense_order_list = []
+            #order_cost = trade_col.find_one({'trade_id': list(order_col.find({'order_status': 'closed', 'order_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]['order_id']})['trade_cost']
+            if re.match(r'^[0-9]+$', threading.current_thread().name):
+                th_name = threading.current_thread().name
+            else:
+                th_name = list(id_col.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))[0]['main_id']
+            order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
+            if side == 'LONG':
+                price_step = int(pos_price * 0.05 / pos_lev)
+                limit_price = int(pos_price + pos_price * 0.03 / pos_lev)
+                trigger_price = pos_price
+                while pos_status(side):
+                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.1 / pos_lev:
+                        create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
+                        break
+                    else:
+                        sl_price = round(pos_price - pos_price * 0.1 / pos_lev, 2)
+                        if not db_search(side, sl_price):
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
+                            id_db(th_name, alert_order)
+                        if bn.fetch_ticker(symbol)['last'] > trigger_price:
+                            btc_price = bn.fetch_ticker(symbol)['last']
+                            adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
+                            if btc_price < limit_price:
+                                #adj_value = round((trigger_price - pos_price) / price_step) -1                                
+                                #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
+                                pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
+                                if trigger_price <= pos_price:
+                                    defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
+                                else:
+                                    #defense_price = int(pos_price + ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
+                                    #defense_price = int(pos_price * (1 + (0.06 + 0.03 * adj_value) / pos_lev))
+                                    defense_price = int(pos_price + pos_price * pt / pos_lev)
+                                    # if abs(defense_price - pos_price) < 1:
+                                    #     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
+                                if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
+                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    if not defense_order:
                                         continue
-                                    else:
-                                        id_db(th_name, stress_order, test_price)
-                                        id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
-                    elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.06 / pos_lev) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('SHORT'):
-                        reverse_order = auto_create('SHORT', 'm10')
-                        threading.Thread(target = Autotrading ,args = ('SHORT',), name = reverse_order).start()
-                    # elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.12 / pos_lev) and len(defense_order_list) < 1:
-                    #     if not pos_status('SHORT'):
-                    #         order_id = auto_create('SHORT', 'm9')
-                    #         time.sleep(5)
-                    #         threading.Thread(target = Autotrading, args = ('SHORT',), name = order_id).start()
-                    #     else:
-                    #         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
-                    #         break
-                    # elif bn.fetch_ticker(symbol)['last'] < pos_price and time.time() - create_time > 600 and not db_search(side, int(pos_price - pos_price * 0.12 / pos_lev)):
-                    #     safe_order_list.append(create_tpsl_order('STOP', 1, round(pos_price - pos_price * (0.24 - 0.02 * safe_nu) / pos_lev, 2)))
-                    #     safe_nu += 1
-                    #     create_time = time.time()
-                print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
-                if retry == 0:
-                    time.sleep(5)
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-                    retry = 5
-                else:
-                    time.sleep(3)
-                    retry -= 1
-        else:
-            price_step = int(pos_price / 1.05 * 0.05 / pos_lev)
-            limit_price = pos_price - int(pos_price / 1.03 * 0.03 / pos_lev)
-            trigger_price = pos_price
-            while pos_status(side):
-                if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.1 / pos_lev):
-                    create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
-                    break
-                else:
-                    sl_price = round(pos_price / (1 - 0.1 / pos_lev), 2)
-                    if not db_search(side, sl_price):
-                        alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
-                        id_db(th_name, alert_order)
-                    if bn.fetch_ticker(symbol)['last'] < trigger_price:
-                        btc_price = bn.fetch_ticker(symbol)['last']
-                        adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
-                        if btc_price > limit_price:
-                            #adj_value = round((pos_price - trigger_price) / price_step) - 1
-                            #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
-                            pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
-                            if trigger_price >= pos_price:
-                                defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
+                                    # defense_order_list.append(defense_order)
+                                    id_db(th_name, defense_order, defense_price)
+                                    #defense_order_dict[trigger_price] = defense_order
+                                    if len(id_db(th_name)) > 3:
+                                        id_list = id_db(th_name)
+                                        bn.cancel_order(id_list[1], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[1]))
+                                        del id_list[1]
+                                        id_db(th_name, order_id_list = id_list)
+                                else:
+                                    time.sleep(1)
+                                    continue                            
+                                print(defense_price, id_db(th_name))
                             else:
-                                defense_price = int(pos_price / ( 1 + pt / pos_lev))
-                                # defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
-                                # if abs(defense_price - pos_price) < 1:
-                                #     defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
-                            if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
-                                if not defense_order:
-                                    continue
-                                # defense_order_list.append(defense_order)
-                                id_db(th_name, defense_order, defense_price)
-                                #defense_order_dict[trigger_price] = defense_order
-                                if len(id_db(th_name)) > 3:
-                                    id_list = id_db(th_name)
-                                    bn.cancel_order(id_list[1], symbol)
-                                    print('挂单{}已被取消！'.format(id_list[1]))
-                                    del id_list[1]
-                                    id_db(th_name, order_id_list = id_list)
-                            else:
-                                time.sleep(1)
-                                continue
-                            print(defense_price, id_db(th_name))
-                        else:
-                            if limit_price - btc_price > price_step:
-                                limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
-                                trigger_price = limit_price + price_step
-                            else:
-                                trigger_price = limit_price
-                                limit_price -= price_step
-                            if int(pos_price - pos_price / 1.03 * 0.03 / pos_lev - price_step * adj_value) > trigger_price:
-                                right_order_count = (pos_price - int(pos_price / 1.03 * 0.03 / pos_lev) - trigger_price) / price_step 
-                                test_price = int(pos_price / ( 1 + (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev))
-                                if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                    stress_order = create_tpsl_order('STOP', 1, test_price, side)
-                                    if not stress_order:
+                                if btc_price - limit_price > price_step:
+                                    limit_price = limit_price + ((btc_price - limit_price) // price_step + 1) * price_step
+                                    trigger_price = limit_price - price_step
+                                else:
+                                    trigger_price = limit_price
+                                    limit_price += price_step
+                                if int(pos_price + pos_price * 0.03 / pos_lev + adj_value * price_step) < trigger_price:
+                                    right_order_count = (trigger_price - int(pos_price * (0.03 / pos_lev + 1))) / price_step
+                                    test_price = int(pos_price + pos_price * (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev)
+                                    if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
+                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
+                                        if not stress_order:
+                                            continue
+                                        else:
+                                            id_db(th_name, stress_order, test_price)
+                                            id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
+                        elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.06 / pos_lev) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('SHORT'):
+                            reverse_order = auto_create('SHORT', 'm10')
+                            threading.Thread(target = Autotrading ,args = ('SHORT',), name = reverse_order).start()
+                        # elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.12 / pos_lev) and len(defense_order_list) < 1:
+                        #     if not pos_status('SHORT'):
+                        #         order_id = auto_create('SHORT', 'm9')
+                        #         time.sleep(5)
+                        #         threading.Thread(target = Autotrading, args = ('SHORT',), name = order_id).start()
+                        #     else:
+                        #         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
+                        #         break
+                        # elif bn.fetch_ticker(symbol)['last'] < pos_price and time.time() - create_time > 600 and not db_search(side, int(pos_price - pos_price * 0.12 / pos_lev)):
+                        #     safe_order_list.append(create_tpsl_order('STOP', 1, round(pos_price - pos_price * (0.24 - 0.02 * safe_nu) / pos_lev, 2)))
+                        #     safe_nu += 1
+                        #     create_time = time.time()
+                    print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
+                    if retry == 0:
+                        time.sleep(5)
+                        print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                        retry = 5
+                    else:
+                        time.sleep(3)
+                        retry -= 1
+            else:
+                price_step = int(pos_price / 1.05 * 0.05 / pos_lev)
+                limit_price = pos_price - int(pos_price / 1.03 * 0.03 / pos_lev)
+                trigger_price = pos_price
+                while pos_status(side):
+                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.1 / pos_lev):
+                        create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
+                        break
+                    else:
+                        sl_price = round(pos_price / (1 - 0.1 / pos_lev), 2)
+                        if not db_search(side, sl_price):
+                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
+                            id_db(th_name, alert_order)
+                        if bn.fetch_ticker(symbol)['last'] < trigger_price:
+                            btc_price = bn.fetch_ticker(symbol)['last']
+                            adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
+                            if btc_price > limit_price:
+                                #adj_value = round((pos_price - trigger_price) / price_step) - 1
+                                #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
+                                pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
+                                if trigger_price >= pos_price:
+                                    defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
+                                else:
+                                    defense_price = int(pos_price / ( 1 + pt / pos_lev))
+                                    # defense_price = int(pos_price - ch_5m * 0.782 * adj_value * (0.6 + 0.2 * adj_value))
+                                    # if abs(defense_price - pos_price) < 1:
+                                    #     defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
+                                if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
+                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    if not defense_order:
                                         continue
-                                    else:
-                                        id_db(th_name, stress_order, test_price)
-                                        id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
-                    elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.06 / pos_lev)) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('LONG'):
-                        reverse_order = auto_create('LONG', 'm10')
-                        threading.Thread(target = Autotrading ,args = ('LONG',), name = reverse_order).start()
-                    # elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
-                    #     if not pos_status('LONG'):
-                    #         order_id= auto_ycreate('LONG', 'm9')
-                    #         time.sleep(5)
-                    #         threading.Thread(target = Autotrading, args = ('LONG',), name = order_id).start()
-                    #     else:
-                    #         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
-                    #         break
-                print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
-                if retry == 0:
-                    time.sleep(5)
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-                    retry = 5
-                else:
-                    time.sleep(3)
-                    retry -= 1
-        for the_id in id_db(th_name):
-            try:
-                bn.cancel_order(the_id, symbol)
-            except Exception as c:
-                print(c)
-                pass
-        order_check()
-        trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))[0]
-        PL = trade_info['trade_P&L'] - trade_info['trade_cost'] - order_cost           
-        push_msg = {
-            '标题：': '{}订单已终止'.format(side),
-            '持仓价格：': pos_price,
-            '成交价格：': trade_info['trade_price'],
-            '盈亏情况：': PL,
-            '账户余额：': bn.fetch_total_balance()['USDT'],
-            '成交时间：': trade_info['uptime']
-        }
-        push_message(push_msg)
-        id_col.update_one({'main_id': th_name}, {'$set': {'P&L': PL}})
-        print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-    else:
-        order_check()
-        print('无持仓！')
-    # except Exception as e:
-    #     print(e)
-    #     Autotrading(side)
+                                    # defense_order_list.append(defense_order)
+                                    id_db(th_name, defense_order, defense_price)
+                                    #defense_order_dict[trigger_price] = defense_order
+                                    if len(id_db(th_name)) > 3:
+                                        id_list = id_db(th_name)
+                                        bn.cancel_order(id_list[1], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[1]))
+                                        del id_list[1]
+                                        id_db(th_name, order_id_list = id_list)
+                                else:
+                                    time.sleep(1)
+                                    continue
+                                print(defense_price, id_db(th_name))
+                            else:
+                                if limit_price - btc_price > price_step:
+                                    limit_price = limit_price - ((limit_price - btc_price) // price_step + 1) * price_step
+                                    trigger_price = limit_price + price_step
+                                else:
+                                    trigger_price = limit_price
+                                    limit_price -= price_step
+                                if int(pos_price - pos_price / 1.03 * 0.03 / pos_lev - price_step * adj_value) > trigger_price:
+                                    right_order_count = (pos_price - int(pos_price / 1.03 * 0.03 / pos_lev) - trigger_price) / price_step 
+                                    test_price = int(pos_price / ( 1 + (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev))
+                                    if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
+                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
+                                        if not stress_order:
+                                            continue
+                                        else:
+                                            id_db(th_name, stress_order, test_price)
+                                            id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
+                        elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.06 / pos_lev)) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('LONG'):
+                            reverse_order = auto_create('LONG', 'm10')
+                            threading.Thread(target = Autotrading ,args = ('LONG',), name = reverse_order).start()
+                        # elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
+                        #     if not pos_status('LONG'):
+                        #         order_id= auto_ycreate('LONG', 'm9')
+                        #         time.sleep(5)
+                        #         threading.Thread(target = Autotrading, args = ('LONG',), name = order_id).start()
+                        #     else:
+                        #         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
+                        #         break
+                    print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
+                    if retry == 0:
+                        time.sleep(5)
+                        print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                        retry = 5
+                    else:
+                        time.sleep(3)
+                        retry -= 1
+            for the_id in id_db(th_name):
+                try:
+                    bn.cancel_order(the_id, symbol)
+                except Exception as c:
+                    print(c)
+                    pass
+            order_check()
+            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))[0]
+            PL = trade_info['trade_P&L'] - trade_info['trade_cost'] - order_cost           
+            push_msg = {
+                '标题：': '{}订单已终止'.format(side),
+                '持仓价格：': pos_price,
+                '成交价格：': trade_info['trade_price'],
+                '盈亏情况：': PL,
+                '账户余额：': bn.fetch_total_balance()['USDT'],
+                '成交时间：': trade_info['uptime']
+            }
+            push_message(push_msg)
+            id_col.update_one({'main_id': th_name}, {'$set': {'P&L': PL}})
+            print('函数运行结束时间：', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        else:
+            order_check()
+            print('无持仓！')
+    except Exception as e:
+        print(e)
+        Autotrading(side)
 
 
 def th_create(q_in):

@@ -816,11 +816,11 @@ def Autotrading(side):
                 limit_price = int(pos_price + pos_price * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
-                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.12 / pos_lev:
+                    if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.1 / pos_lev:
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
-                        sl_price = round(pos_price - pos_price * 0.12 / pos_lev, 2)
+                        sl_price = round(pos_price - pos_price * 0.1 / pos_lev, 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
@@ -888,7 +888,7 @@ def Autotrading(side):
                         #     safe_order_list.append(create_tpsl_order('STOP', 1, round(pos_price - pos_price * (0.24 - 0.02 * safe_nu) / pos_lev, 2)))
                         #     safe_nu += 1
                         #     create_time = time.time()
-                    print(trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
+                    print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
                         time.sleep(5)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -901,11 +901,11 @@ def Autotrading(side):
                 limit_price = pos_price - int(pos_price / 1.03 * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
-                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.12 / pos_lev):
+                    if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.1 / pos_lev):
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
-                        sl_price = round(pos_price / (1 - 0.12 / pos_lev), 2)
+                        sl_price = round(pos_price / (1 - 0.1 / pos_lev), 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
@@ -968,7 +968,7 @@ def Autotrading(side):
                         #     else:
                         #         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         #         break
-                    print(th_name+': ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
+                    print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
                         time.sleep(5)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -1286,6 +1286,7 @@ if __name__ == '__main__':
     # Autoorders()
     main()    
 
+#bn.fapiPrivate_post_listenkey() 此命令可获取账户的推送订阅key
 #pprint(bn.fetch_open_orders('BTC/USDT'))
 #print(ma(5,'1h'))
 # pprint(bn.fetch_ohlcv(symbol,'1m')[-1])

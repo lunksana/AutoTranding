@@ -6,7 +6,6 @@ import websocket
 import time
 import json
 import userapi
-from pprint import pprint
 
 def on_open(ws):
     print('on open')
@@ -17,12 +16,15 @@ def on_close(ws):
     print('On close')
 
 def on_message(ws, msg):
-    pprint(msg)
+    print(msg)
 
 def on_error(ws, error):
     print(f'on error: {error}')
 
-wss_url = 'wss://fstream.binance.com/ws/btcusdt@kline_15m'
+wss_url = 'wss://fstream.binance.com/ws/btcusdt@kline_15m' # 15分钟K线
+wss_url = 'wss://fstream.binance.com/ws/btcusdt@markPrice@1s' # 标记价格
+wss_url = 'wss://fstream.binance.com/ws/btcusdt@miniTicker' # 精简ticker
+wss_url = 'wss://fstream.binance.com/ws/FbIDMnfvr0fLszyZ4Q7nQHyiGrhqXIMv3i3DovSMudvI5QlvFqOCeSHGyeDD83jZ' # 用户账户信息订阅
 ws = websocket.WebSocketApp(
     wss_url,
     on_open = on_open,
@@ -31,4 +33,4 @@ ws = websocket.WebSocketApp(
     on_error = on_error
 )
 
-ws.run_forever(ping_interval = 1)
+ws.run_forever(ping_interval = 15)

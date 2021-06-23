@@ -6,6 +6,7 @@ import websocket
 import time
 import json
 import userapi
+from pprint import pprint
 
 def on_open(ws):
     print('on open')
@@ -16,7 +17,7 @@ def on_close(ws):
     print('On close')
 
 def on_message(ws, msg):
-    print(msg)
+    pprint(msg)
 
 def on_error(ws, error):
     print(f'on error: {error}')

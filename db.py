@@ -1,6 +1,28 @@
 #使用MongoDB作为主要的数据库存储方案，对于数据库的操作建立相关的函数调用
 
 import pymongo
+import json
+
+class Dbctl:
+    def __init__(self, address, port, db_name):
+        self.address = address
+        self.port = port
+        self.db = db_name
+    
+    def db_link(self, col_name):
+        return pymongo.MongoClient(self.address, self.port)[self.db][col_name]
+
+    def db_insert(self, data):
+        if not isinstance(data, tuple):
+            return
+        else:
+            pass
+
+    def db_search(self, *data):
+        pass
+
+    def db_update(self):
+        pass
 
 class Newdb():
     def __init__(self,mongodb,db_name):

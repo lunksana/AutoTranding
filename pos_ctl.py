@@ -17,21 +17,36 @@ bn = ccxt.binance({
 })
 
 class Posctl:
-    def __init__(self, symbol):
-        self.sym = symbol
+    sym = 'BTCUSDT'
+    def __init__(self):
+        pass
     
     def place_order(self, param):
         return bn.fapiPrivate_post_order(param)   
 
-    def create_pos(self, data):
+    def create_pos(self, btc_price, btc_amt, order_type):
+        if btc_amt > 0:
+            side = 'BUY'
+            pos_side = 'LONG'
+        else:
+            side = 'SELL'
+            pos_side = 'SHORT'
+            btc_amt = abs(btc_amt)
+        if order_type not in ['LIMIT', 'MARKET']:
+            return
         param = {
             'symbol': self.sym,
-            'side': data['side'],
-            'positionSide': data['positionSide'],
+            'side': side,
+            'positionSide': pos_side,
             'type': order_type,
-            'quantity': qty,
-            'newClientOrderId': f"{app}_{data['op']}_{rstr}", 
+            'quantity': btc_amt
         }
+        if order_type == 'LIMIT':
+            param['timeInForce'] = 'GTC'
+            param['price'] = btc_price
+        order_res = self.place_order(param)
+        if order_res['order_id']:
+            return order_res['order_id']
     
     def stop_pos(self):
         pass

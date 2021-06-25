@@ -6,7 +6,6 @@ import ccxt
 import userapi
 
 # 基本变量设置
-sym = 'BTCUSDT'
 bn = ccxt.binance({
     'enableRateLimit': True,
     'options': {
@@ -17,22 +16,34 @@ bn = ccxt.binance({
     'secret': userapi.secret
 })
 
-class Posctl():
-    def __init__(self):
-        pass
+class Posctl:
+    def __init__(self, symbol):
+        self.sym = symbol
     
     def place_order(self, param):
         return bn.fapiPrivate_post_order(param)   
 
     def create_pos(self, data):
         param = {
-            'symbol': sym,
+            'symbol': self.sym,
             'side': data['side'],
             'positionSide': data['positionSide'],
             'type': order_type,
             'quantity': qty,
             'newClientOrderId': f"{app}_{data['op']}_{rstr}", 
         }
+    
+    def stop_pos(self):
+        pass
+
+    def cancel_order(self):
+        pass
+    
+    def create_stop_order(self):
+        pass
+
+    def create_pfhl_order(self):
+        pass
 
 # def create_pos():
 #         def create_pos(self, data):

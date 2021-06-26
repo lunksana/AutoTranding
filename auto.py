@@ -812,7 +812,7 @@ def Autotrading(side):
             th_name = list(id_col.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))[0]['main_id']
         order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
         if side == 'LONG':
-            price_step = int(pos_price * 0.05 / pos_lev)
+            price_step = int(pos_price * 0.055 / pos_lev)
             limit_price = int(pos_price + pos_price * 0.03 / pos_lev)
             trigger_price = pos_price
             while pos_status(side):
@@ -897,7 +897,7 @@ def Autotrading(side):
                     time.sleep(3)
                     retry -= 1
         else:
-            price_step = int(pos_price / 1.05 * 0.05 / pos_lev)
+            price_step = int(pos_price / 1.055 * 0.055 / pos_lev)
             limit_price = pos_price - int(pos_price / 1.03 * 0.03 / pos_lev)
             trigger_price = pos_price
             while pos_status(side):

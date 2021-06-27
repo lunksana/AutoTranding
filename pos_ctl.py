@@ -22,7 +22,10 @@ class Posctl:
         pass
     
     def place_order(self, param):
-        return bn.fapiPrivate_post_order(param)   
+        return bn.fapiPrivate_post_order(param)
+    
+    def get_pos(self, pos_side):
+        bn.fapiPrivateV2GetPositionRisk({'symbol': self.sym})
 
     def create_pos(self, btc_price, btc_amt, order_type):
         if btc_amt > 0:

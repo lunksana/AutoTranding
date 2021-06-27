@@ -10,17 +10,29 @@ from pprint import pprint
 
 def on_open(ws):
     print('on open')
-    # data = {}
-    # ws.send(json.dumps(data))
+    data = {
+        'method': 'SUBSCRIBE',
+        'params': [
+            'btcusdt@kline_15m',
+            'btcusdt@markPrice@1s',
+            'btcusdt_perpetual@continuousKline_15m'
+        ],
+        'id': 123
+    }
+    ws.send(json.dumps(data))
 
 def on_close(ws):
     print('On close')
 
 def on_message(ws, msg):
-    pprint(msg)
+    print(msg)
 
 def on_error(ws, error):
     print(f'on error: {error}')
+    
+def on_ping(ws, msg):
+    print('get a ping!')
+    ws.pong()
 
 stream = 'btcusdt@kline_15m/btcusdt@markPrice@1s'
 # {
@@ -35,17 +47,19 @@ wss_url = 'wss://fstream.binance.com/ws/btcusdt@kline_15m' # 15分钟K线
 wss_url = 'wss://fstream.binance.com/ws/btcusdt@markPrice@1s' # 标记价格
 wss_url = 'wss://fstream.binance.com/ws/btcusdt@miniTicker' # 精简ticker
 wss_url = 'wss://fstream.binance.com/ws/FbIDMnfvr0fLszyZ4Q7nQHyiGrhqXIMv3i3DovSMudvI5QlvFqOCeSHGyeDD83jZ' # 用户账户信息订阅
-wss_url = f'wss://fstream.binance.com/stream?streams={stream}'
+wss_url = f'wss://fstream.binance.com/ws/'
 ws = websocket.WebSocketApp(
     wss_url,
     on_open = on_open,
     on_close = on_close,
     on_message = on_message,
-    on_error = on_error
+    on_error = on_error,
+    on_ping = on_ping
 )
 
 ws.run_forever(ping_interval = 15)
 
+'''
 {
     "stream":"btcusdt@kline_15m",
     "data":{
@@ -73,3 +87,40 @@ ws.run_forever(ping_interval = 15)
         }
     }
 }
+'''
+'''
+{
+    "e":"kline",
+    "E":1624793687978,
+    "s":"BTCUSDT",
+    "k":{
+        "t":1624793400000,
+        "T":1624794299999,
+        "s":"BTCUSDT",
+        "i":"15m",
+        "f":1100949467,
+        "L":1101031665,
+        "o":"32950.00",
+        "c":"33142.87",
+        "h":"33261.56",
+        "l":"32932.37",
+        "v":"10957.033",
+        "n":82192,
+        "x":false,
+        "q":"362972470.64803",
+        "V":"6048.611",
+        "Q":"200385362.53320",
+        "B":"0"
+    }
+}
+{
+    "e":"markPriceUpdate",
+    "E":1624793688002,
+    "s":"BTCUSDT",
+    "p":"33139.82000000",
+    "P":"32800.41714709",
+    "i":"33178.63560092",
+    "r":"-0.00044465",
+    "T":1624809600000
+}
+'''

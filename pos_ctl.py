@@ -25,7 +25,10 @@ class Posctl:
         return bn.fapiPrivate_post_order(param)
     
     def get_pos(self, pos_side):
-        bn.fapiPrivateV2GetPositionRisk({'symbol': self.sym})
+        pos_list = bn.fapiPrivateV2GetPositionRisk({'symbol': self.sym})
+        for i in pos_list:
+            if i['positionSide'] == pos_side:
+                return i
 
     def create_pos(self, btc_price, btc_amt, order_type):
         if btc_amt > 0:

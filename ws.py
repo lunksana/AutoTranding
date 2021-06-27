@@ -4,6 +4,7 @@
 
 import websocket
 import time
+import requests
 import json
 import userapi
 from pprint import pprint
@@ -25,14 +26,20 @@ def on_close(ws):
     print('On close')
 
 def on_message(ws, msg):
-    print(msg)
+    msg = json.loads(msg)
+    pprint(msg)
+    if 'e' in msg:
+        pass
+        
 
 def on_error(ws, error):
     print(f'on error: {error}')
     
 def on_ping(ws, msg):
     print('get a ping!')
-    ws.pong()
+    #ws.pong()
+    ws.send('pong', websocket.ABNF.OPCODE_PONG)
+
 
 stream = 'btcusdt@kline_15m/btcusdt@markPrice@1s'
 # {

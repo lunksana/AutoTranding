@@ -3,6 +3,7 @@
 import ws
 import time
 import ccxt
+import requests
 import userapi
 
 # 基本变量设置

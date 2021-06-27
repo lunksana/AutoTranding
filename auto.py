@@ -30,7 +30,7 @@ executors = {
       'default': ThreadPoolExecutor(4)
 }
 schebg = BackgroundScheduler(executors = executors)
-positions_split = 90
+positions_split = 45
 leverage = 20
 que = Queue()
 # 多进程模式下对接数据库的方式需要类似与如下类型

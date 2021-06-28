@@ -42,6 +42,8 @@ def on_ping(ws, msg):
     print('get a ping!')
     #ws.pong()
     ws.send('pong', websocket.ABNF.OPCODE_PONG)
+    time.sleep(10)
+    ws.close()
     
 
 

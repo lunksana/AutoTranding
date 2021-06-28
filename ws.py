@@ -7,7 +7,7 @@ import time
 import requests
 import json
 import userapi
-from pprint import pprint
+import threading
 
 def on_open(ws):
     print('on open')
@@ -16,6 +16,9 @@ def on_open(ws):
         'params': [
             'btcusdt@kline_15m',
             'btcusdt@markPrice@1s',
+            'btcusdt@aggTrade',
+            'btcusdt@depth5@100ms',
+            'btcusdt@miniTicker',
             'btcusdt_perpetual@continuousKline_15m'
         ],
         'id': 123
@@ -27,9 +30,9 @@ def on_close(ws):
 
 def on_message(ws, msg):
     msg = json.loads(msg)
-    pprint(msg)
-    if 'e' in msg:
-        pass
+    print(msg)
+     
+    #enumerate(msg)
         
 
 def on_error(ws, error):
@@ -39,6 +42,7 @@ def on_ping(ws, msg):
     print('get a ping!')
     #ws.pong()
     ws.send('pong', websocket.ABNF.OPCODE_PONG)
+    
 
 
 stream = 'btcusdt@kline_15m/btcusdt@markPrice@1s'

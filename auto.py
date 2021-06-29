@@ -921,7 +921,7 @@ def main():
             return
         else:
             if not schebg.get_jobs():
-                schebg.add_job(get_side, 'cron', args = [que], minute = '1/15', second = 15, name = 'sched')
+                schebg.add_job(get_side, 'cron', args = [que], minute = '1/15', name = 'sched')
                 schebg.add_job(db_del, 'cron', day = '*/15', name = 'del_expired_db')
                 #schebg.add_job(pos_monitoring, 'cron', args = [que], minute = '*/1', name = 'position_monitoring')
             th_value = re.compile(r'^thread\-[0-9]+$')

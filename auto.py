@@ -230,7 +230,7 @@ def db_insert(data_info):
             'amount': order_info['amount'],
             'pos_side': order_info['info']['positionSide'],
             'close_price': 0,
-            'order_count': -2,
+            'order_count': -3,
             'order_price_list': list(),
             'order_id_list': list(),
             'P&L': 0,
@@ -660,9 +660,12 @@ def Autotrading(side):
                         break
                     else:
                         sl_price = round(pos_price - pos_price * 0.1 / pos_lev, 2)
+                        tp_price = round(pos_price + pos_price * 0.12 / pos_lev, 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
+                            if not db_search(side, tp_price):
+                                id_db(th_name, create_tpsl_order('STOP', 1, tp_price, side))
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
@@ -685,11 +688,11 @@ def Autotrading(side):
                                     # defense_order_list.append(defense_order)
                                     id_db(th_name, defense_order, defense_price)
                                     #defense_order_dict[trigger_price] = defense_order
-                                    if len(id_db(th_name)) > 3:
+                                    if len(id_db(th_name)) > 4:
                                         id_list = id_db(th_name)
-                                        bn.cancel_order(id_list[1], symbol)
-                                        print('挂单{}已被取消！'.format(id_list[1]))
-                                        del id_list[1]
+                                        bn.cancel_order(id_list[2], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[2]))
+                                        del id_list[2]
                                         id_db(th_name, order_id_list = id_list)
                                 else:
                                     time.sleep(1)
@@ -745,9 +748,12 @@ def Autotrading(side):
                         break
                     else:
                         sl_price = round(pos_price / (1 - 0.1 / pos_lev), 2)
+                        tp_price = round(pos_price / (1 + 0.12 / pos_lev), 2)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
+                            if not db_search(side, tp_price):
+                                id_db(th_name, create_tpsl_order('STOP', 1, tp_price, side))
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
@@ -769,11 +775,11 @@ def Autotrading(side):
                                     # defense_order_list.append(defense_order)
                                     id_db(th_name, defense_order, defense_price)
                                     #defense_order_dict[trigger_price] = defense_order
-                                    if len(id_db(th_name)) > 3:
+                                    if len(id_db(th_name)) > 4:
                                         id_list = id_db(th_name)
-                                        bn.cancel_order(id_list[1], symbol)
-                                        print('挂单{}已被取消！'.format(id_list[1]))
-                                        del id_list[1]
+                                        bn.cancel_order(id_list[2], symbol)
+                                        print('挂单{}已被取消！'.format(id_list[2]))
+                                        del id_list[2]
                                         id_db(th_name, order_id_list = id_list)
                                 else:
                                     time.sleep(1)

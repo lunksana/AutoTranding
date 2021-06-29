@@ -880,8 +880,8 @@ def get_side(q_out):
             side = 'LONG' 
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
-        elif ohl[x][3] < ohl[y][3] < ohl[z][3]:
-            pass
+        # elif ohl[x][3] < ohl[y][3] < ohl[z][3] and ohl[x][1] < ohl[z][4]:
+        #     pass
         print(mid_price, ohl[z][4])
     event = threading.Event()
     if side != None and not pos_status(side):

@@ -911,7 +911,7 @@ def main():
     order_check()
     schebg.start()
     while 1:
-        if bn.fetch_total_balance()['USDT'] <= 235:
+        if bn.fetch_total_balance()['USDT'] <= 230:
             print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
             pus_msg = {
                 '标题：': '资金已经低于阈值，结束程序！',

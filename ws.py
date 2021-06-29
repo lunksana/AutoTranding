@@ -9,6 +9,7 @@ import json
 import userapi
 import threading
 
+try_nu = 10
 def on_open(ws):
     print('on open')
     data = {
@@ -31,6 +32,11 @@ def on_close(ws):
 def on_message(ws, msg):
     msg = json.loads(msg)
     print(msg)
+    print(len(msg))
+    global try_nu
+    try_nu -= 1
+    if try_nu < 1:
+        ws.close()
      
     #enumerate(msg)
         

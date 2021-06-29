@@ -208,7 +208,7 @@ def db_insert(data_info):
             'order_id': data_info['id'],
             'order_status': data_info['status'],
             'order_type': data_info['info']['type'],
-            'order_price': data_info['price'],
+            'order_price': data_info['stopPrice'],
             'order_amount': data_info['amount'],
             'order_side': data_info['side'],
             'order_positionSide': data_info['info']['positionSide'],

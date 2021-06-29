@@ -493,11 +493,13 @@ def create_tpsl_order(type, ratio, price, poside):
             priceIsNeeded = True
             stoppriceIsNeeded = True
             positionsideIsNeeded = True
+            workingType = 'CONTRACT_PRICE'
         elif upperType == 'STOP_MARKET' or upperType == 'TAKE_PROFIT_MARKET':
             stoppriceIsNeeded = True
             closepositionIsNeeded = True
             positionsideIsNeeded = True
             quantity = None
+            workingType = 'MARK_PRICE'
     # 必要参数
     # amount,side,positionSide
     if positionsideIsNeeded:
@@ -543,7 +545,7 @@ def create_tpsl_order(type, ratio, price, poside):
                 'stopPrice': stopPrice,
                 'positionSide': positionSide,
                 'closePosition': closePosition,
-                'workingType': 'MARK_PRICE'
+                'workingType': workingType
             })
             print('订单成功执行！')
             order_check(the_order['id'])
@@ -662,10 +664,10 @@ def Autotrading(side):
                         sl_price = round(pos_price - pos_price * 0.1 / pos_lev, 2)
                         tp_price = round(pos_price + pos_price * 0.12 / pos_lev, 2)
                         if not db_search(side, sl_price):
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
+                            alert_order = create_tpsl_order('STOP_MARKET', None, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
                             if not db_search(side, tp_price):
-                                id_db(th_name, create_tpsl_order('STOP', 1, tp_price, side))
+                                id_db(th_name, create_tpsl_order('TAKE_PROFIT', 1, tp_price, side))
                         if bn.fetch_ticker(symbol)['last'] > trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
@@ -682,7 +684,10 @@ def Autotrading(side):
                                     # if abs(defense_price - pos_price) < 1:
                                     #     defense_price = int(pos_price + pos_price * 0.03 / pos_lev)
                                 if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    if defense_price < pos_price:
+                                        defense_order = create_tpsl_order('STOP_MARKET', None, defense_price, side) #防守订单
+                                    else:
+                                        defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side)
                                     if not defense_order:
                                         continue
                                     # defense_order_list.append(defense_order)
@@ -750,10 +755,10 @@ def Autotrading(side):
                         sl_price = round(pos_price / (1 - 0.1 / pos_lev), 2)
                         tp_price = round(pos_price / (1 + 0.12 / pos_lev), 2)
                         if not db_search(side, sl_price):
-                            alert_order = create_tpsl_order('STOP', 1, sl_price, side) #12%止损单
+                            alert_order = create_tpsl_order('STOP_MARKET', None, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
                             if not db_search(side, tp_price):
-                                id_db(th_name, create_tpsl_order('STOP', 1, tp_price, side))
+                                id_db(th_name, create_tpsl_order('TAKE_PROFIT', 1, tp_price, side))
                         if bn.fetch_ticker(symbol)['last'] < trigger_price:
                             btc_price = bn.fetch_ticker(symbol)['last']
                             adj_value = max(id_col.find_one({'main_id': th_name})['order_count'], 0)
@@ -769,7 +774,10 @@ def Autotrading(side):
                                     # if abs(defense_price - pos_price) < 1:
                                     #     defense_price = int(pos_price / (1 + 0.03 / pos_lev))                               
                                 if defense_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                    defense_order = create_tpsl_order('STOP', 1, defense_price, side) #防守订单
+                                    if defense_price > pos_price:
+                                        defense_order = create_tpsl_order('STOP_MARKET', None, defense_price, side) #防守订单
+                                    else:
+                                        defense_price = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side)
                                     if not defense_order:
                                         continue
                                     # defense_order_list.append(defense_order)
@@ -872,6 +880,8 @@ def get_side(q_out):
             side = 'LONG' 
             mode = 'm10'
             # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ohl[z][0] / 1000)), side, ohl[z][2] - ohl[z][1], ohl[z][1] - ohl[z][3])
+        elif ohl[x][3] < ohl[y][3] < ohl[z][3]:
+            pass
         print(mid_price, ohl[z][4])
     event = threading.Event()
     if side != None and not pos_status(side):
@@ -918,7 +928,8 @@ def main():
                 '资金：': bn.fetch_total_balance()['USDT']
             }
             push_message(pus_msg)
-            return
+            schebg.remove_all_jobs()
+            break
         else:
             if not schebg.get_jobs():
                 schebg.add_job(get_side, 'cron', args = [que], minute = '1/15', name = 'sched')

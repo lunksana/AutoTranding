@@ -65,12 +65,16 @@ class Posctl:
         if order_type not in ['STOP', 'STOP_MARKET']:
             return
         elif order_type == 'STOP_MARKET': 
+            if pos_side == 'LONG':
+                side = 'SELL'
+            else:
+                side = 'BUY'
             param = {
                 'symbol': self.sym,
                 'side': data['side'],
                 'positionSide': pos_side,
                 'type': order_type, 
-                'stopPrice': data['price'],
+                'stopPrice': btc_price,
                 'closePosition': True,
                 'workingType': 'MARK_PRICE'
             }

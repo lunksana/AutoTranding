@@ -253,8 +253,7 @@ def db_insert(data_info):
 
 # 基于订单价格进行搜索
 def db_search(side, price):
-    order_list = [x['order_price'] for x in list(order_col.find({'order_status': 'open', 'order_positionSide': side}, {'_id': 0, 'order_price': 1}))]
-    if price in order_list:
+    if order_col.count_documents({'order_status': 'open', 'order_price': price, 'order_positionSide': side}) > 0:
         return True
     else:
         return False
@@ -267,7 +266,7 @@ def db_search(side, price):
 '''
 def order_check(order_id = None):
     if db.list_collection_names():
-        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(10))
+        db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(16))
         start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['uptime']
         db_trade_list = list(trade_col.find({'uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
         # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
@@ -296,7 +295,7 @@ def order_check(order_id = None):
                                 db_insert(order)
             return
         elif order_id.isdigit(): #判断输入的内容能否转换成数字
-            order_status = bn.fetch_order_status(order_id,symbol)    # 基于id获取订单状态
+            order_status = bn.fetch_order_status(order_id, symbol)    # 基于id获取订单状态
             if order_id not in trade_id_list:   
         # while order_status == "open":
         #     time.sleep(3)
@@ -548,8 +547,8 @@ def create_tpsl_order(type, ratio, price, poside):
                 'workingType': workingType
             })
             print('订单成功执行！')
-            order_check(the_order['id'])
             db_insert(the_order)
+            order_check(the_order['id'])
             break
         except Exception as a:
             print('订单执行异常，重试中！错误信息：{}'.format(a))
@@ -565,7 +564,7 @@ def create_tpsl_order(type, ratio, price, poside):
     return the_order['id']
 
 
-def cancel_my_order(price, side, type):
+def cancel_my_order(order_id = None, price = None, side = None, type = None):
     order_check()
     open_order = bn.fetch_open_orders(symbol)
     if len(open_order) == 0:
@@ -661,8 +660,8 @@ def Autotrading(side):
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
-                        sl_price = round(pos_price - pos_price * 0.1 / pos_lev, 2)
-                        tp_price = round(pos_price + pos_price * 0.12 / pos_lev, 2)
+                        sl_price = int(pos_price - pos_price * 0.1 / pos_lev)
+                        tp_price = int(pos_price + pos_price * 0.12 / pos_lev)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP_MARKET', None, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
@@ -752,8 +751,8 @@ def Autotrading(side):
                         create_tpsl_order('STOP_MARKET', None, int(bn.fetch_ticker(symbol)['last']), side) #快速止损
                         break
                     else:
-                        sl_price = round(pos_price / (1 - 0.1 / pos_lev), 2)
-                        tp_price = round(pos_price / (1 + 0.12 / pos_lev), 2)
+                        sl_price = int(pos_price / (1 - 0.1 / pos_lev))
+                        tp_price = int(pos_price / (1 + 0.12 / pos_lev))
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP_MARKET', None, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
@@ -836,7 +835,7 @@ def Autotrading(side):
                     print(c)
                     pass
             order_check()
-            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}}).sort([('uptime', -1)]).limit(1))[0]
+            trade_info = list(trade_col.find({'trade_P&L': {'$ne': 0}, 'trade_positionSide': side}).sort([('uptime', -1)]).limit(1))[0]
             PL = trade_info['trade_P&L'] - trade_info['trade_cost'] - order_cost           
             push_msg = {
                 '标题：': '{}订单已终止'.format(side),
@@ -920,30 +919,40 @@ def main():
     ch_lev(leverage)
     order_check()
     schebg.start()
-    while 1:
-        if bn.fetch_total_balance()['USDT'] <= 230:
-            print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-            pus_msg = {
-                '标题：': '资金已经低于阈值，结束程序！',
-                '资金：': bn.fetch_total_balance()['USDT']
-            }
-            push_message(pus_msg)
-            schebg.remove_all_jobs()
-            break
-        else:
-            if not schebg.get_jobs():
-                schebg.add_job(get_side, 'cron', args = [que], minute = '1/15', name = 'sched')
-                schebg.add_job(db_del, 'cron', day = '*/15', name = 'del_expired_db')
-                #schebg.add_job(pos_monitoring, 'cron', args = [que], minute = '*/1', name = 'position_monitoring')
-            th_value = re.compile(r'^thread\-[0-9]+$')
-            th_names = [nm.getName() for nm in threading.enumerate()]
-            if len([x for x in th_names if th_value.match(x)]) < 1:
-                threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
-            time.sleep(10)
-        pprint(threading.enumerate())
-        print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-        pprint(schebg.get_jobs())
-        time.sleep(300)
+    try:
+        while 1:
+            if bn.fetch_total_balance()['USDT'] <= 200:
+                print('资金低于阈值！', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                pus_msg = {
+                    '标题：': '资金已经低于阈值，结束程序！',
+                    '资金：': bn.fetch_total_balance()['USDT']
+                }
+                push_message(pus_msg)
+                schebg.remove_all_jobs()
+                break
+            else:
+                if not schebg.get_jobs():
+                    schebg.add_job(get_side, 'cron', args = [que], minute = '1/15', name = 'sched')
+                    schebg.add_job(db_del, 'cron', day = '*/15', name = 'del_expired_db')
+                    #schebg.add_job(pos_monitoring, 'cron', args = [que], minute = '*/1', name = 'position_monitoring')
+                th_value = re.compile(r'^thread\-[0-9]+$')
+                th_names = [nm.getName() for nm in threading.enumerate()]
+                if len([x for x in th_names if th_value.match(x)]) < 1:
+                    threading.Thread(target = th_create, args = (que,), name = 'thread-' + str(int(time.time()))).start()
+                time.sleep(10)
+            pprint(threading.enumerate())
+            print(bn.fetch_free_balance()['USDT'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
+            pprint(schebg.get_jobs())
+            time.sleep(300)
+    except Exception as d:
+        schebg.remove_all_jobs()
+        msg = {
+            '标题': '主程序异常退出',
+            '错误信息': str(d),
+            '触发时间': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        }
+        push_message(msg)
+        main()
 
 if __name__ == '__main__':
     # print('5m:',avg_ch('5m'))

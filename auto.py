@@ -653,7 +653,7 @@ def Autotrading(side):
             order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.055 / pos_lev)
-                limit_price = int(pos_price + pos_price * 0.03 / pos_lev)
+                limit_price = int(pos_price + pos_price * 0.035 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.1 / pos_lev:
@@ -736,15 +736,15 @@ def Autotrading(side):
                         #     create_time = time.time()
                     print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
-                        time.sleep(5)
+                        time.sleep(2)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                         retry = 5
                     else:
-                        time.sleep(3)
+                        time.sleep(1)
                         retry -= 1
             else:
                 price_step = int(pos_price / 1.055 * 0.055 / pos_lev)
-                limit_price = pos_price - int(pos_price / 1.03 * 0.03 / pos_lev)
+                limit_price = pos_price - int(pos_price / 1.035 * 0.035 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.1 / pos_lev):
@@ -822,11 +822,11 @@ def Autotrading(side):
                         #         break
                     print(f'线程ID: {th_name}, 价格情况: ', trigger_price, limit_price, bn.fetch_ticker(symbol)['last'])
                     if retry == 0:
-                        time.sleep(5)
+                        time.sleep(2)
                         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                         retry = 5
                     else:
-                        time.sleep(3)
+                        time.sleep(1)
                         retry -= 1
             for the_id in id_db(th_name):
                 try:

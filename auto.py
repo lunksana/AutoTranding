@@ -268,10 +268,9 @@ def order_check(order_id = None):
     if db.list_collection_names():
         db_order_list = list(order_col.find({},{'_id': 0, 'order_id': 1}).sort([('uptime', -1)]).limit(16))
         start_time = order_col.find_one({'order_id': db_order_list[-1]['order_id']})['uptime']
-        db_trade_list = list(trade_col.find({'uptime': {'$gte': start_time}},{'_id': 0, 'trade_id': 1}))
         # mongodb查询生成的列表需要先进行赋值，之后再通过列表生成式生成需要的列表
         order_id_list = [x['order_id'] for x in db_order_list]
-        trade_id_list = [x['trade_id'] for x in db_trade_list]
+        trade_id_list = [x['trade_id'] for x in trade_col.find({'uptime': {'$gte': start_time}})]
         open_order_id_list = [x['id'] for x in bn.fetch_open_orders(symbol)]
         if order_id == None:
     #        all_closed_id_list = [x['id'] for x in bn.fetch_orders(symbol) if x['status'] == 'closed']
@@ -293,6 +292,7 @@ def order_check(order_id = None):
                         for order in bn.fetch_open_orders(symbol):
                             if order['id'] == id:
                                 db_insert(order)
+                order_check()
             return
         elif order_id.isdigit(): #判断输入的内容能否转换成数字
             order_status = bn.fetch_order_status(order_id, symbol)    # 基于id获取订单状态
@@ -650,6 +650,7 @@ def Autotrading(side):
                 th_name = threading.current_thread().name
             else:
                 th_name = list(id_col.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))[0]['main_id']
+            print(th_name)
             order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.055 / pos_lev)
@@ -661,7 +662,7 @@ def Autotrading(side):
                         break
                     else:
                         sl_price = int(pos_price - pos_price * 0.1 / pos_lev)
-                        tp_price = int(pos_price + pos_price * 0.12 / pos_lev)
+                        tp_price = int(pos_price + pos_price * 0.1 / pos_lev)
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP_MARKET', None, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
@@ -709,11 +710,11 @@ def Autotrading(side):
                                 else:
                                     trigger_price = limit_price
                                     limit_price += price_step
-                                if int(pos_price + pos_price * 0.03 / pos_lev + adj_value * price_step) < trigger_price:
-                                    right_order_count = (trigger_price - int(pos_price * (0.03 / pos_lev + 1))) / price_step
+                                if int(pos_price + pos_price * 0.035 / pos_lev + adj_value * price_step) < trigger_price:
+                                    right_order_count = (trigger_price - int(pos_price * (0.035 / pos_lev + 1))) / price_step
                                     test_price = int(pos_price + pos_price * (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev)
                                     if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
+                                        stress_order = create_tpsl_order('TAKE_PROFIT', 1, test_price, side)
                                         if not stress_order:
                                             continue
                                         else:
@@ -721,7 +722,7 @@ def Autotrading(side):
                                             id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
                         elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.06 / pos_lev) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('SHORT'):
                             reverse_order = auto_create('SHORT', 'm10')
-                            threading.Thread(target = Autotrading ,args = ('SHORT',), name = reverse_order).start()
+                            threading.Thread(target = Autotrading, args = ('SHORT',), name = reverse_order).start()
                         # elif bn.fetch_ticker(symbol)['last'] < int(pos_price - pos_price * 0.12 / pos_lev) and len(defense_order_list) < 1:
                         #     if not pos_status('SHORT'):
                         #         order_id = auto_create('SHORT', 'm9')
@@ -752,7 +753,7 @@ def Autotrading(side):
                         break
                     else:
                         sl_price = int(pos_price / (1 - 0.1 / pos_lev))
-                        tp_price = int(pos_price / (1 + 0.12 / pos_lev))
+                        tp_price = int(pos_price / (1 + 0.1 / pos_lev))
                         if not db_search(side, sl_price):
                             alert_order = create_tpsl_order('STOP_MARKET', None, sl_price, side) #12%止损单
                             id_db(th_name, alert_order)
@@ -799,11 +800,11 @@ def Autotrading(side):
                                 else:
                                     trigger_price = limit_price
                                     limit_price -= price_step
-                                if int(pos_price - pos_price / 1.03 * 0.03 / pos_lev - price_step * adj_value) > trigger_price:
-                                    right_order_count = (pos_price - int(pos_price / 1.03 * 0.03 / pos_lev) - trigger_price) / price_step 
+                                if int(pos_price - pos_price / 1.035 * 0.035 / pos_lev - price_step * adj_value) > trigger_price:
+                                    right_order_count = (pos_price - int(pos_price / 1.035 * 0.035 / pos_lev) - trigger_price) / price_step 
                                     test_price = int(pos_price / ( 1 + (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev))
                                     if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
+                                        stress_order = create_tpsl_order('TAKE_PROFIT', 1, test_price, side)
                                         if not stress_order:
                                             continue
                                         else:
@@ -811,7 +812,7 @@ def Autotrading(side):
                                             id_col.update_one({'main_id': th_name}, {'$set': {'order_count': right_order_count + 1}})
                         elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.06 / pos_lev)) and len(id_col.find_one({'main_id': th_name})['order_price_list']) < 2 and not pos_status('LONG'):
                             reverse_order = auto_create('LONG', 'm10')
-                            threading.Thread(target = Autotrading ,args = ('LONG',), name = reverse_order).start()
+                            threading.Thread(target = Autotrading, args = ('LONG',), name = reverse_order).start()
                         # elif bn.fetch_ticker(symbol)['last'] > int(pos_price / (1 - 0.12 / pos_lev)) and len(defense_order_list) < 1:
                         #     if not pos_status('LONG'):
                         #         order_id= auto_ycreate('LONG', 'm9')

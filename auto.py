@@ -654,7 +654,7 @@ def Autotrading(side):
             order_cost = trade_col.find_one({'trade_id': th_name})['trade_cost']
             if side == 'LONG':
                 price_step = int(pos_price * 0.055 / pos_lev)
-                limit_price = int(pos_price + pos_price * 0.035 / pos_lev)
+                limit_price = int(pos_price + pos_price * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] < pos_price - pos_price * 0.1 / pos_lev:
@@ -674,7 +674,7 @@ def Autotrading(side):
                             if btc_price < limit_price:
                                 #adj_value = round((trigger_price - pos_price) / price_step) -1                                
                                 #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
-                                pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
+                                pt = (0.017 + (0.057 + 0.006 * adj_value) * adj_value) * 0.618
                                 if trigger_price <= pos_price:
                                     defense_price = int(pos_price - pos_price * 0.06 / pos_lev)                                 
                                 else:
@@ -710,9 +710,9 @@ def Autotrading(side):
                                 else:
                                     trigger_price = limit_price
                                     limit_price += price_step
-                                if int(pos_price + pos_price * 0.035 / pos_lev + adj_value * price_step) < trigger_price:
-                                    right_order_count = (trigger_price - int(pos_price * (0.035 / pos_lev + 1))) / price_step
-                                    test_price = int(pos_price + pos_price * (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev)
+                                if int(pos_price + pos_price * 0.03 / pos_lev + adj_value * price_step) < trigger_price:
+                                    right_order_count = (trigger_price - int(pos_price * (0.03 / pos_lev + 1))) / price_step
+                                    test_price = int(pos_price + pos_price * (0.017 + (0.057 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev)
                                     if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                         stress_order = create_tpsl_order('TAKE_PROFIT', 1, test_price, side)
                                         if not stress_order:
@@ -745,7 +745,7 @@ def Autotrading(side):
                         retry -= 1
             else:
                 price_step = int(pos_price / 1.055 * 0.055 / pos_lev)
-                limit_price = pos_price - int(pos_price / 1.035 * 0.035 / pos_lev)
+                limit_price = pos_price - int(pos_price / 1.03 * 0.03 / pos_lev)
                 trigger_price = pos_price
                 while pos_status(side):
                     if bn.fetch_ticker(symbol)['last'] > pos_price / (1 - 0.1 / pos_lev):
@@ -765,7 +765,7 @@ def Autotrading(side):
                             if btc_price > limit_price:
                                 #adj_value = round((pos_price - trigger_price) / price_step) - 1
                                 #pt = 0.02 + 0.014 * adj_value * (adj_value + 1)
-                                pt = (0.024 + (0.05 + 0.006 * adj_value) * adj_value) * 0.618
+                                pt = (0.017 + (0.057 + 0.006 * adj_value) * adj_value) * 0.618
                                 if trigger_price >= pos_price:
                                     defense_price = int(pos_price / (1 - 0.06 / pos_lev))                                 
                                 else:
@@ -800,9 +800,9 @@ def Autotrading(side):
                                 else:
                                     trigger_price = limit_price
                                     limit_price -= price_step
-                                if int(pos_price - pos_price / 1.035 * 0.035 / pos_lev - price_step * adj_value) > trigger_price:
-                                    right_order_count = (pos_price - int(pos_price / 1.035 * 0.035 / pos_lev) - trigger_price) / price_step 
-                                    test_price = int(pos_price / ( 1 + (0.024 + (0.05 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev))
+                                if int(pos_price - pos_price / 1.03 * 0.03 / pos_lev - price_step * adj_value) > trigger_price:
+                                    right_order_count = (pos_price - int(pos_price / 1.03 * 0.03 / pos_lev) - trigger_price) / price_step 
+                                    test_price = int(pos_price / ( 1 + (0.017 + (0.057 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev))
                                     if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
                                         stress_order = create_tpsl_order('TAKE_PROFIT', 1, test_price, side)
                                         if not stress_order:

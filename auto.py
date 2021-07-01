@@ -540,6 +540,7 @@ def create_tpsl_order(type, ratio, price, poside):
         closePosition = False
     while try_count > 0:
         try:
+            print(stopPrice)  #调试输出
             the_order = bn.create_order(symbol, type, side, quantity, price, {
                 'stopPrice': stopPrice,
                 'positionSide': positionSide,

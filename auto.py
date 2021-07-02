@@ -370,6 +370,7 @@ def make_order(btc_price, amount):
     db_insert(new_order)
     order_id = new_order['id']
     order_check(order_id)
+    db_insert(order_id)
     return order_id
 
 # MA计算
@@ -613,19 +614,20 @@ def auto_create(side, mod):
     order_mode = order_modes[mod]
     if side == 'SHORT':
         btc_price = bn.fetch_ticker(symbol)['last']
-        order_price = int(btc_price - avg_ch('5m') * 0.382)
+        order_price = btc_price - 10
         balance = bn.fetch_total_balance()['USDT']
         amount = 0 - round(balance / positions_split / btc_price * leverage, 3)
         auto_order = make_order(order_price, amount)
     else:
         btc_price = bn.fetch_ticker(symbol)['last']
-        order_price = int(btc_price + avg_ch('5m') * 0.382)
+        order_price = btc_price + 10
         balance = bn.fetch_total_balance()['USDT']
         amount = round(balance / positions_split / btc_price * leverage, 3)
         auto_order = make_order(order_price, amount)
     push_msg = {
         '标题：': '建立{}订单'.format(side),
         '订单ID：': auto_order,
+        '成交价：': order_price,
         '成交量：': amount,
         '订单模式': order_mode,
         '订单成交时间：': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
@@ -778,7 +780,7 @@ def Autotrading(side):
                                     if defense_price > pos_price:
                                         defense_order = create_tpsl_order('STOP_MARKET', None, defense_price, side) #防守订单
                                     else:
-                                        defense_price = create_tpsl_order('STOP', 1, defense_price, side)
+                                        defense_order = create_tpsl_order('STOP', 1, defense_price, side)
                                     if not defense_order:
                                         continue
                                     # defense_order_list.append(defense_order)
@@ -857,13 +859,20 @@ def Autotrading(side):
         print(e)
         Autotrading(side)
 
-# 尝试新的策略
+# 尝试新的策略，建立上下价格限制，之后在基础价格上进行多次建仓，低于标准值就买入。高于持仓均价就按比例建立止盈订单
 def autolimit(side):
-    th_id = threading.current_thread().name
-    db_insert(th_id)
-    pos_price = id_col.find_one({'main_id': th_id})['pos_price']
-    while 1:
-        pass
+    if pos_status(side):
+        if re.match(r'^[0-9]+$', threading.current_thread().name):
+            th_id = threading.current_thread().name
+        else:
+            #th_id = list(order_col.find({'order_positionSide': side, 'order_status': 'closed', 'order_type': 'LIMIT'}).sort([('uptime', -1)]).limit(1))[0]['order_id']
+            th_id = list(id_col.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))[0]['main_id']
+        pos_price = id_col.find_one({'main_id': th_id})['pos_price']
+        if side == 'LONG':
+            while pos_status(side):
+                if len(id_col.find({'main_id': th_id})['order_price_list']) < 2:
+                    pass
+            
 
 
 

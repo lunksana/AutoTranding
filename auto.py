@@ -688,7 +688,7 @@ def Autotrading(side):
                                     if defense_price < pos_price:
                                         defense_order = create_tpsl_order('STOP_MARKET', None, defense_price, side) #防守订单
                                     else:
-                                        defense_order = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side)
+                                        defense_order = create_tpsl_order('STOP', 1, defense_price, side)
                                     if not defense_order:
                                         continue
                                     # defense_order_list.append(defense_order)
@@ -715,7 +715,7 @@ def Autotrading(side):
                                     right_order_count = (trigger_price - int(pos_price * (0.03 / pos_lev + 1))) / price_step
                                     test_price = int(pos_price + pos_price * (0.017 + (0.057 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev)
                                     if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                        stress_order = create_tpsl_order('TAKE_PROFIT', 1, test_price, side)
+                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
                                         if not stress_order:
                                             continue
                                         else:
@@ -778,7 +778,7 @@ def Autotrading(side):
                                     if defense_price > pos_price:
                                         defense_order = create_tpsl_order('STOP_MARKET', None, defense_price, side) #防守订单
                                     else:
-                                        defense_price = create_tpsl_order('TAKE_PROFIT', 1, defense_price, side)
+                                        defense_price = create_tpsl_order('STOP', 1, defense_price, side)
                                     if not defense_order:
                                         continue
                                     # defense_order_list.append(defense_order)
@@ -805,7 +805,7 @@ def Autotrading(side):
                                     right_order_count = (pos_price - int(pos_price / 1.03 * 0.03 / pos_lev) - trigger_price) / price_step 
                                     test_price = int(pos_price / ( 1 + (0.017 + (0.057 + 0.006 * right_order_count) * right_order_count) * 0.618 / pos_lev))
                                     if test_price not in id_col.find_one({'main_id': th_name})['order_price_list']:
-                                        stress_order = create_tpsl_order('TAKE_PROFIT', 1, test_price, side)
+                                        stress_order = create_tpsl_order('STOP', 1, test_price, side)
                                         if not stress_order:
                                             continue
                                         else:
@@ -856,6 +856,15 @@ def Autotrading(side):
     except Exception as e:
         print(e)
         Autotrading(side)
+
+# 尝试新的策略
+def autolimit(side):
+    th_id = threading.current_thread().name
+    db_insert(th_id)
+    pos_price = id_col.find_one({'main_id': th_id})['pos_price']
+    while 1:
+        pass
+
 
 
 def th_create(q_in):

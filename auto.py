@@ -54,6 +54,7 @@ order_col = db['orders']
 trade_col = db['trades']
 funds_col = db['funds']
 id_col = db['id']
+pos_col = db['pos']
 
 # FORMAT = '%(asctime)s %(levename)s %(message)s'
 # DATEFMT = '%Y-%m-%d %H:%M:%S'
@@ -869,9 +870,17 @@ def autolimit(side):
             th_id = list(id_col.find({'pos_side': side}).sort([('uptime', -1)]).limit(1))[0]['main_id']
         pos_price = id_col.find_one({'main_id': th_id})['pos_price']
         if side == 'LONG':
-            while pos_status(side):
-                if len(id_col.find({'main_id': th_id})['order_price_list']) < 2:
-                    pass
+            trigger_price = pos_price * (1 - 0.25 / leverage)
+            limit_price = pos_price * (1 + 0.25 / leverage)
+            if len(id_col.find({'main_id': th_id})['order_price_list']) < 2 and trigger_price < bn.fetch_ticker(symbol)['last'] < limit_price:
+                if not db_search(side, trigger_price):
+                    trigger_order = create_tpsl_order('STOP_MARKET', None, trigger_price, side)
+                    id_db(th_id, trigger_order)
+                elif not db_search(side, limit_price):
+                    limit_order = create_tpsl_order('TAKE_PROFIT_MARKT', None, limit_price, side)
+                    id_db(th_id, limit_order)
+            else:
+                pass   
             
 
 

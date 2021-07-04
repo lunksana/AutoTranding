@@ -64,20 +64,23 @@ class Posctl:
     def create_stop_order(self, btc_price, pos_side, order_type):
         if order_type not in ['STOP', 'STOP_MARKET']:
             return
-        elif order_type == 'STOP_MARKET': 
-            if pos_side == 'LONG':
-                side = 'SELL'
-            else:
-                side = 'BUY'
+        else:
             param = {
                 'symbol': self.sym,
-                'side': data['side'],
                 'positionSide': pos_side,
                 'type': order_type, 
                 'stopPrice': btc_price,
-                'closePosition': True,
                 'workingType': 'MARK_PRICE'
             }
+        if order_type == 'STOP_MARKET':
+            param['closePosition'] = True
+        else:
+            param['quantity'] = 
+        if pos_side == 'LONG':
+            side = 'SELL'
+        else:
+            side = 'BUY'
+        param['side'] = side
 
     def create_pfhl_order(self):
         pass

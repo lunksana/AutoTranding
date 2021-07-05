@@ -373,6 +373,7 @@ def pos_db(main_id, makepos_id = None, order_id = None):
     if id_col.find_one({'main_id': main_id}):
         main_order_info = bn.fetch_order(main_id, symbol)
         pos_guard = id_col.find_one({'main_id': main_id})['defense_price']
+        pos_side = id_col.find_one({'main_id': main_id})['pos_side']
         if pos_guard['trigger_price'] != 0 or pos_guard['limit_price'] != 0:
             if main_order_info['pos_side'] == 'LONG':
                 pos_guard = {
@@ -387,6 +388,8 @@ def pos_db(main_id, makepos_id = None, order_id = None):
             id_col.update_one({'main_id': main_id}, {'$set': {'defense_price': pos_guard}})
         if makepos_id:
             makepos_info = bn.fetch_order(makepos_id, symbol)
+            new_pos = fetch_positions(pos_side)
+            id_col.update_one({'main_id': main_id}, {'$set': {'pos_price': new_pos['average']}})
     else:
         db_insert(main_id)
         

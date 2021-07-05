@@ -389,7 +389,7 @@ def pos_db(main_id, makepos_id = None, order_id = None):
         if makepos_id:
             makepos_info = bn.fetch_order(makepos_id, symbol)
             new_pos = fetch_positions(pos_side)
-            id_col.update_one({'main_id': main_id}, {'$set': {'pos_price': new_pos['average']}})
+            id_col.update_one({'main_id': main_id}, {'$set': {'pos_price': new_pos['pos_price']}})
     else:
         db_insert(main_id)
         

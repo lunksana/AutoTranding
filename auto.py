@@ -202,8 +202,7 @@ def avg_ch(interval):
   'type': None}
 '''
 def db_insert(data_info):
-    val = 'clientOrderId'
-    if isinstance(data_info, dict) and val in data_info.keys():
+    if isinstance(data_info, dict) and 'clientOrderId' in data_info.keys():
         col = order_col
         col_dict = {
             'order_id': data_info['id'],
@@ -236,6 +235,21 @@ def db_insert(data_info):
             'order_id_list': list(),
             'P&L': 0,
             'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(order_info['timestamp'] / 1000))
+        }
+        col_dict2 = {
+            'start_price': start_price,
+            'close_price': 0,
+            'positionSide': side,
+            'makepos_price_list': [],
+            'order_price_list': [],
+            'defense_prices': {
+                'trigger_price': trigger_price,
+                'limit_price': limit_price
+            },
+            'present_price': present_price,
+            'present_amount': present_amount,
+            'trade_count': trade_count,
+            'uptime': uptime,    
         }
     else:
         col = trade_col
@@ -1134,3 +1148,4 @@ if __name__ == '__main__':
 
 # schebl.add_job(test_k, 'cron', minute = '1/15', args = ['15m'])
 # schebl.start()
+

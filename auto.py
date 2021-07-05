@@ -226,30 +226,23 @@ def db_insert(data_info):
         order_info = bn.fetch_order(data_info, symbol)
         col_dict = {
             'main_id': data_info,
+            'start_price': order_info['average'],
             'pos_price': order_info['average'],
             'amount': order_info['amount'],
             'pos_side': order_info['info']['positionSide'],
+            'defense_price': {
+                'trigger_price': 0,
+                'limit_price': 0
+            },
             'close_price': 0,
             'order_count': -3,
+            'trade_count': 0,
+            'makepos_price_list': [],
+            'makepos_id_list': [],
             'order_price_list': list(),
             'order_id_list': list(),
             'P&L': 0,
             'uptime': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(order_info['timestamp'] / 1000))
-        }
-        col_dict2 = {
-            'start_price': start_price,
-            'close_price': 0,
-            'positionSide': side,
-            'makepos_price_list': [],
-            'order_price_list': [],
-            'defense_prices': {
-                'trigger_price': trigger_price,
-                'limit_price': limit_price
-            },
-            'present_price': present_price,
-            'present_amount': present_amount,
-            'trade_count': trade_count,
-            'uptime': uptime,    
         }
     else:
         col = trade_col
@@ -374,6 +367,30 @@ def id_db(main_id, order_id = None, order_price = None, order_id_list = None):
         db_insert(main_id)
         id_db(main_id, order_id, order_price, order_id_list)
     return
+
+# 自动话操作数据库
+def pos_db(main_id, makepos_id = None, order_id = None):
+    if id_col.find_one({'main_id': main_id}):
+        main_order_info = bn.fetch_order(main_id, symbol)
+        pos_guard = id_col.find_one({'main_id': main_id})['defense_price']
+        if pos_guard['trigger_price'] != 0 or pos_guard['limit_price'] != 0:
+            if main_order_info['pos_side'] == 'LONG':
+                pos_guard = {
+                    'trigger_price': main_order_info['average'] * (1 - 0.25 / leverage),
+                    'limit_price': main_order_info['average'] * (1 + 0.25 / leverage)
+                }
+            else:
+                pos_guard = {
+                    'trigger_price': main_order_info['average'] * (1 + 0.25 / leverage),
+                    'limit_price': main_order_info['average'] * (1 - 0.25 /leverage),
+                }
+            id_col.update_one({'main_id': main_id}, {'$set': {'defense_price': pos_guard}})
+        if makepos_id:
+            makepos_info = bn.fetch_order(makepos_id, symbol)
+    else:
+        db_insert(main_id)
+        
+
 
 # 开单
 def make_order(btc_price, amount):

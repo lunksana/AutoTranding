@@ -386,10 +386,10 @@ def pos_db(main_id, makepos_id = None, order_id = None):
                     'limit_price': main_order_info['average'] * (1 - 0.25 /leverage),
                 }
             id_col.update_one({'main_id': main_id}, {'$set': {'defense_price': pos_guard}})
-        if makepos_id:
+        if makepos_id and isinstance(makepos_id, str):
             makepos_info = bn.fetch_order(makepos_id, symbol)
             new_pos = fetch_positions(pos_side)
-            id_col.update_one({'main_id': main_id}, {'$set': {'pos_price': new_pos['pos_price']}})
+            id_col.update_one({'main_id': main_id}, {'$set': {'pos_price': new_pos['pos_price'], 'makepos_price_list': []}})
     else:
         db_insert(main_id)
         

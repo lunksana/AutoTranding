@@ -389,7 +389,9 @@ def pos_db(main_id, makepos_id = None, order_id = None):
         if makepos_id and isinstance(makepos_id, str):
             makepos_info = bn.fetch_order(makepos_id, symbol)
             new_pos = fetch_positions(pos_side)
-            id_col.update_one({'main_id': main_id}, {'$set': {'pos_price': new_pos['pos_price'], 'makepos_price_list': []}})
+            makepos_price_list = id_col.find_one({'main_id': main_id})['makepos_price_list'].append(new_pos['pos_price'])
+            makepos_id_list = id_col.find_one({'main_id': main_id})['makepos_id_list'].append(makepos_id)
+            id_col.update_one({'main_id': main_id}, {'$set': {'pos_price': new_pos['pos_price'], 'makepos_price_list': makepos_price_list, 'makepos_id_list': makepos_id_list}})
     else:
         db_insert(main_id)
         

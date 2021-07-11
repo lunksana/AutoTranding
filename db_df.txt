@@ -18,3 +18,10 @@ id_col定义情况：
 'order_id_list': list(),                            订单ID列表
 'P&L': 0,                                           盈亏额
 'uptime':                                           生成时间
+
+'pos_price': float(pos['entryPrice']),              持仓价格
+'pos_amt': float(pos['positionAmt']),               持仓量
+'pos_lq_price': float(pos['liquidationPrice']),     强平价格
+'pos_lev': int(pos['leverage']),                    杠杆值
+'pos_unp': float(pos['unRealizedProfit']),          未达成盈亏量
+'pos_wallet': float(pos['isolatedWallet'])          保证金量

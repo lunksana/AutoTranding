@@ -7,20 +7,39 @@ import requests
 import userapi
 
 # 基本变量设置
-bn = ccxt.binance({
-    'enableRateLimit': True,
-    'options': {
-        'defaultType': 'future',
-        'adjustForTimeDifference': True
-    },
-    'apiKey': userapi.apiKey,
-    'secret': userapi.secret
-})
+# bn = ccxt.binance({
+#     'enableRateLimit': True,
+#     'options': {
+#         'defaultType': 'future',
+#         'adjustForTimeDifference': True
+#     },
+#     'apiKey': userapi.apiKey,
+#     'secret': userapi.secret
+# })
+
+class bn:
+    def __init__(self, api_key = None, secret = None, timeout = 5):
+        base_url = 'https://fapi.binance.com'
+        self.api_key = api_key
+        self.secret = secret
+        self.timeout = timeout
+    
+    def fetch_ticker(self):
+        path = '/fapi/v1/ticker/price'
+        url = self.base_url + path
+        requests_data = requests.get(url, timeout=self.timeout).json()
+        return requests_data
+        
+    def fetchOHLCV(self, symbol, interval, limit=None):
+        path = '/fapi/v1/klines'
+        url = self.base_url + path
 
 class Posctl:
-    sym = 'BTCUSDT'
-    def __init__(self):
-        pass
+    def __init__(self, sym = None):
+        if sym:
+            self.sym = sym
+        else:
+            self.sym = 'BTCUSDT'
     
     def place_order(self, param):
         return bn.fapiPrivate_post_order(param)

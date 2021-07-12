@@ -1,10 +1,11 @@
 # 将所有仓位控制，订单操作模块化
 
-import ws
+#import ws
 import time
 import ccxt
 import requests
 import userapi
+from pprint import pprint
 
 # 基本变量设置
 # bn = ccxt.binance({
@@ -17,22 +18,67 @@ import userapi
 #     'secret': userapi.secret
 # })
 
-class bn:
-    def __init__(self, api_key = None, secret = None, timeout = 5):
-        base_url = 'https://fapi.binance.com'
+class Bn:
+    base_url = 'https://fapi.binance.com'
+    def __init__(self, symbol, api_key = None, secret = None, timeout = 5):
+        if symbol:
+            self.symbol = symbol
+        else:
+            self.symbol = 'BTCUSDT'
         self.api_key = api_key
         self.secret = secret
         self.timeout = timeout
     
-    def fetch_ticker(self):
+    def fetch_ticker(self, symbol = None):
         path = '/fapi/v1/ticker/price'
-        url = self.base_url + path
-        requests_data = requests.get(url, timeout=self.timeout).json()
-        return requests_data
+        url = Bn.base_url + path
+        if symbol:
+            sym = symbol
+        else:
+            sym = self.symbol
+        params = {'symbol': sym}
+        requests_data = requests.get(url, params, timeout=self.timeout).json()
+        return float(requests_data['price'])
         
     def fetchOHLCV(self, symbol, interval, limit=None):
         path = '/fapi/v1/klines'
         url = self.base_url + path
+    
+    def get_timestamp(self):
+        return int(time.time() * 1000)
+
+    def fetch_listenKey(self):
+        pass
+
+    def fetch_open_orders(self):
+        pass
+
+    def fetch_orders(self):
+        pass
+
+    def fetch_order_status(self):
+        pass
+
+    def fetch_my_trades(self):
+        pass
+
+    def fetch_total_balance(self):
+        pass
+
+    def fetch_free_balance(self):
+        pass
+
+    def create_order(self):
+        pass
+
+    def cancel_order(self):
+        pass
+
+if __name__ == '__main__':
+    print(Bn.base_url)
+    bn = Bn('BTCUSDT')
+    pprint(bn.fetch_ticker('ETHUSDT'))
+exit()
 
 class Posctl:
     def __init__(self, sym = None):
@@ -94,7 +140,7 @@ class Posctl:
         if order_type == 'STOP_MARKET':
             param['closePosition'] = True
         else:
-            param['quantity'] = 
+            param['quantity'] = None
         if pos_side == 'LONG':
             side = 'SELL'
         else:

@@ -29,6 +29,9 @@ class Bn:
         self.secret = secret
         self.timeout = timeout
     
+    def build_params(self, params:dict):
+        return '&'.join([f"{key}={params[key]}" for key in params.keys()])
+    
     def fetch_ticker(self, symbol = None):
         path = '/fapi/v1/ticker/price'
         url = Bn.base_url + path

@@ -132,13 +132,13 @@ class Bn:
         print(url)
         return requests.request(RequestMethod.GET.value, url, headers = self.headers, timeout = self.timeout).json()
 
-    def fetch_orders(self):
+    def fetch_orders(self, symbol = None, since = None, limit = None):
         pass
 
-    def fetch_order_status(self):
+    def fetch_order_status(self, id, symbol = None):
         pass
 
-    def fetch_my_trades(self):
+    def fetch_my_trades(self, symbol = None, since = None, limit = None):
         pass
 
     def fetch_total_balance(self):

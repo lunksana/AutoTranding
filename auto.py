@@ -395,7 +395,7 @@ def pos_db(main_id, makepos_id = None, order_id = None):
     else:
         db_insert(main_id)
         
-pprint(bn.fapiPrivate_post_listenkey())
+pprint(bn.fetch_open_orders())
 exit()
 
 # 开单

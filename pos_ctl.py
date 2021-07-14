@@ -3,6 +3,7 @@
 #import ws
 import time
 import requests
+from requests.api import request
 import userapi
 import hashlib
 import hmac
@@ -26,9 +27,35 @@ class RequestMethod(Enum):
     POST = "post"
     DELETE = "delete"
     PUT = "put"
-    
+
+class Interval(Enum):
+    MINUTE_1 = '1m'
+    MINUTE_3 = '3m'
+    MINUTE_5 = '5m'
+    MINUTE_15 = '15m'
+    MINUTE_30 = '30m'
+    HOUR_1 = '1h'
+    HOUR_2 = '2h'
+    HOUR_4 = '4h'
+    HOUR_6 = '6h'
+    HOUR_8 = '8h'
+    HOUR_12 = '12h'
+    DAY_1 = '1d'
+    DAY_3 = '3d'
+    WEEK_1 = '1w'
+    MOUTH_1 = '1M'
+
+class OrderType(Enum):
+    LIMIT = 'LIMIT'
+    MARKET = 'MARKET'
+    STOP = 'STOP'
+    TAKE_PROFIT = 'TAKE_PROFIT'
+    STOP_MARKET = 'STOP_MARKET'
+    TAKE_PROFIT_MARKET = 'TAKE_PROFIT_MARKET'
+
 class Bn:
     base_url = 'https://fapi.binance.com'
+    interval_list = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M']
     def __init__(self, symbol, api_key = None, secret = None, timeout = 5):
         if symbol:
             self.symbol = symbol
@@ -37,14 +64,18 @@ class Bn:
         self.api_key = api_key
         self.secret = secret
         self.timeout = timeout
+        self.headers = {'X-MBX-APIKEY': self.api_key}
     
-    def _build_params(self, params:dict):
-        return '&'.join([f"{key}={params[key]}" for key in params.keys()])
+    def _build_params(self, params: dict):
+        return '&'.join([f"{key} = {params[key]}" for key in params.keys()])
     
-    def  _generate_signature(self, data):
-        query_str = self. _build_params(data) 
-        return hmac.new(self.secret.encode('utf-8'), msg=query_str.encode('utf-8'),digestmod=hashlib.sha256).hexdigest()
+    def  _generate_signature(self, params: dict):
+        query_str = self._build_params(params) 
+        return hmac.new(self.secret.encode('utf-8'), msg=query_str.encode('utf-8'), digestmod=hashlib.sha256).hexdigest()
     
+    def _requests(self, Method: RequestMethod):
+        pass
+
     def fetch_ticker(self, symbol = None):
         path = '/fapi/v1/ticker/price'
         url = Bn.base_url + path
@@ -56,32 +87,48 @@ class Bn:
         requests_data = requests.get(url, params, timeout=self.timeout).json()
         return float(requests_data['price'])
         
-    def fetchOHLCV(self, symbol, interval, limit: int = None):
-        path = '/fapi/v1/klines'
-        url = self.base_url + path
-        params = {
-            'symbol': symbol
-        }
+    def fetchOHLCV(self, symbol, interval: str, since = None, limit: int = None):
+        if interval not in self.interval_list:
+            return
+        else:
+            path = '/fapi/v1/klines'
+            url = self.base_url + path
+            params = {
+                'symbol': symbol,
+                'interval': interval,
+                'limit': limit
+            }
+            if since:
+                params['startTime'] = since
+            requests_data = requests.get(url, params, timeout = self.timeout).json()
+            return [[ohl[i] for i in range(0,6)] for ohl in requests_data]
     
+    # Private API
     def get_timestamp(self):
         return int(time.time() * 1000)
 
     def listenKey(self, Method: RequestMethod):
         path = '/fapi/v1/listenKey'
-        headers = {'X-MBX-APIKEY': self.api_key}
         url = self.base_url + path
         if Method.value != 'delete':
-            requests_data = requests.request(Method.value, url, headers=headers, timeout=self.timeout)
+            requests_data = requests.request(Method.value, url, headers = self.headers, timeout = self.timeout)
             if Method.value == 'put':
                 return
             else:
                 return requests_data.json()['listenKey']
         else:
-            requests.request(Method.value, url, headers=headers, timeout=self.timeout)
+            requests.request(Method.value, url, headers = self.headers, timeout = self.timeout)
             return
 
-    def fetch_open_orders(self):
-        pass
+    def fetch_open_orders(self, symbol = None, since = None, limit = None):
+        path = '/fapi/v1/openOrders'
+        url = self.base_url + path
+        params = {
+            'timestamp': self.get_timestamp()
+        }
+        if symbol:
+            params['symbol'] = symbol
+        return requests.request(RequestMethod.GET.value, url, headers = self.headers, params = params, timeout = self.timeout)
 
     def fetch_orders(self):
         pass
@@ -108,7 +155,8 @@ if __name__ == '__main__':
     print(Bn.base_url)
     bn = Bn('BTCUSDT', userapi.apiKey, userapi.secret)
     pprint(bn.fetch_ticker('ETHUSDT'))
-    print(bn.listenKey(RequestMethod.DELETE))
+    print(bn.listenKey(RequestMethod.POST))
+    pprint(bn.fetchOHLCV('BTCUSDT', '15m', limit = 2))
     
 exit()
 

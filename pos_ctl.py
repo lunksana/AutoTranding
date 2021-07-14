@@ -67,7 +67,7 @@ class Bn:
         self.headers = {'X-MBX-APIKEY': self.api_key}
     
     def _build_params(self, params: dict):
-        return '&'.join([f"{key} = {params[key]}" for key in params.keys()])
+        return '&'.join([f"{key}={params[key]}" for key in params.keys()])
     
     def  _generate_signature(self, params: dict):
         query_str = self._build_params(params) 
@@ -128,9 +128,9 @@ class Bn:
         }
         if symbol:
             params['symbol'] = symbol
-        url = url + '&signature=' + self._generate_signature(params)
+        url = url + '?'+ self._build_params(params)+ '&signature=' + self._generate_signature(params)
         print(url)
-        return requests.request(RequestMethod.GET.value, url, headers = self.headers, timeout = self.timeout)
+        return requests.request(RequestMethod.GET.value, url, headers = self.headers, timeout = self.timeout).json()
 
     def fetch_orders(self):
         pass

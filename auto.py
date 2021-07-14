@@ -395,7 +395,7 @@ def pos_db(main_id, makepos_id = None, order_id = None):
     else:
         db_insert(main_id)
         
-pprint(bn.fetch_free_balance()['USDT'])
+pprint(bn.fapiPrivate_post_listenkey())
 exit()
 
 # 开单

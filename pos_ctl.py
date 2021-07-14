@@ -2,10 +2,12 @@
 
 #import ws
 import time
-import ccxt
 import requests
 import userapi
+import hashlib
+import hmac
 from pprint import pprint
+from enum import Enum, unique
 
 # 基本变量设置
 # bn = ccxt.binance({
@@ -18,6 +20,13 @@ from pprint import pprint
 #     'secret': userapi.secret
 # })
 
+@unique
+class RequestMethod(Enum):
+    GET = "get"
+    POST = "post"
+    DELETE = "delete"
+    PUT = "put"
+    
 class Bn:
     base_url = 'https://fapi.binance.com'
     def __init__(self, symbol, api_key = None, secret = None, timeout = 5):
@@ -29,8 +38,12 @@ class Bn:
         self.secret = secret
         self.timeout = timeout
     
-    def build_params(self, params:dict):
+    def _build_params(self, params:dict):
         return '&'.join([f"{key}={params[key]}" for key in params.keys()])
+    
+    def  _generate_signature(self, data):
+        query_str = self. _build_params(data) 
+        return hmac.new(self.secret.encode('utf-8'), msg=query_str.encode('utf-8'),digestmod=hashlib.sha256).hexdigest()
     
     def fetch_ticker(self, symbol = None):
         path = '/fapi/v1/ticker/price'
@@ -43,15 +56,29 @@ class Bn:
         requests_data = requests.get(url, params, timeout=self.timeout).json()
         return float(requests_data['price'])
         
-    def fetchOHLCV(self, symbol, interval, limit=None):
+    def fetchOHLCV(self, symbol, interval, limit: int = None):
         path = '/fapi/v1/klines'
         url = self.base_url + path
+        params = {
+            'symbol': symbol
+        }
     
     def get_timestamp(self):
         return int(time.time() * 1000)
 
-    def fetch_listenKey(self):
-        pass
+    def listenKey(self, Method: RequestMethod):
+        path = '/fapi/v1/listenKey'
+        headers = {'X-MBX-APIKEY': self.api_key}
+        url = self.base_url + path
+        if Method.value != 'delete':
+            requests_data = requests.request(Method.value, url, headers=headers, timeout=self.timeout)
+            if Method.value == 'put':
+                return
+            else:
+                return requests_data.json()['listenKey']
+        else:
+            requests.request(Method.value, url, headers=headers, timeout=self.timeout)
+            return
 
     def fetch_open_orders(self):
         pass
@@ -79,8 +106,10 @@ class Bn:
 
 if __name__ == '__main__':
     print(Bn.base_url)
-    bn = Bn('BTCUSDT')
+    bn = Bn('BTCUSDT', userapi.apiKey, userapi.secret)
     pprint(bn.fetch_ticker('ETHUSDT'))
+    print(bn.listenKey(RequestMethod.DELETE))
+    
 exit()
 
 class Posctl:

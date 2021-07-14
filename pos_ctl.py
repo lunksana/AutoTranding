@@ -71,7 +71,7 @@ class Bn:
     
     def  _generate_signature(self, params: dict):
         query_str = self._build_params(params) 
-        return hmac.new(self.secret.encode('utf-8'), msg=query_str.encode('utf-8'), digestmod=hashlib.sha256).hexdigest()
+        return hmac.new(self.secret.encode('utf-8'), query_str.encode('utf-8'), hashlib.sha256).hexdigest()
     
     def _requests(self, Method: RequestMethod):
         pass
@@ -128,7 +128,9 @@ class Bn:
         }
         if symbol:
             params['symbol'] = symbol
-        return requests.request(RequestMethod.GET.value, url, headers = self.headers, params = params, timeout = self.timeout)
+        url = url + '&signature=' + self._generate_signature(params)
+        print(url)
+        return requests.request(RequestMethod.GET.value, url, headers = self.headers, timeout = self.timeout)
 
     def fetch_orders(self):
         pass
@@ -156,7 +158,7 @@ if __name__ == '__main__':
     bn = Bn('BTCUSDT', userapi.apiKey, userapi.secret)
     pprint(bn.fetch_ticker('ETHUSDT'))
     print(bn.listenKey(RequestMethod.POST))
-    pprint(bn.fetchOHLCV('BTCUSDT', '15m', limit = 2))
+    pprint(bn.fetch_open_orders('BTCUSDT'))
     
 exit()
 

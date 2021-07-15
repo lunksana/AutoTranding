@@ -1017,6 +1017,8 @@ def main():
         push_message(msg)
         main()
 
+pprint(bn.fetch_order_status('25817519984', symbol))
+exit()
 if __name__ == '__main__':
     # print('5m:',avg_ch('5m'))
     print('15m:',avg_ch('15m'))

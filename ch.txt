@@ -1,0 +1,137 @@
+id_col定义情况：
+
+'main_id': data_info,                               主id
+'start_price': order_info['average'],               主id对应的开仓价格
+'pos_price': order_info['average'],                 此时持仓价格
+'amount': order_info['amount'],                     持仓量
+'pos_side': order_info['info']['positionSide'],     持仓方向
+'defense_price': {                                  防守价格
+    'trigger_price': 0,
+    'limit_price': 0
+},
+'close_price': 0,                                   关仓价格
+'order_count': -3,                                  订单计数，对应普通的自动网格交易    
+'trade_count': 0,                                   建仓计数
+'makepos_price_list': [],                           建仓价格列表
+'makepos_id_list': [],                              建仓订单ID列表
+'order_price_list': list(),                         订单价格列表
+'order_id_list': list(),                            订单ID列表
+'P&L': 0,                                           盈亏额
+'uptime':                                           生成时间
+
+'pos_price': float(pos['entryPrice']),              持仓价格
+'pos_amt': float(pos['positionAmt']),               持仓量
+'pos_lq_price': float(pos['liquidationPrice']),     强平价格
+'pos_lev': int(pos['leverage']),                    杠杆值
+'pos_unp': float(pos['unRealizedProfit']),          未达成盈亏量
+'pos_wallet': float(pos['isolatedWallet'])          保证金量
+
+fetch_open_orders
+requests
+[{'avgPrice': '0',
+  'clientOrderId': 'android_MG7bwc1iopdkznD44cMG',
+  'closePosition': False,
+  'cumQuote': '0',
+  'executedQty': '0',
+  'orderId': 25817519984,
+  'origQty': '0.001',
+  'origType': 'LIMIT',
+  'positionSide': 'SHORT',
+  'price': '40000',
+  'priceProtect': False,
+  'side': 'SELL',
+  'status': 'NEW',
+  'stopPrice': '0',
+  'symbol': 'BTCUSDT',
+  'time': 1626313298799,
+  'timeInForce': 'GTC',
+  'type': 'LIMIT',
+  'updateTime': 1626313298799,
+  'workingType': 'CONTRACT_PRICE'}]
+
+ccxt
+[{'amount': 0.001,
+  'average': None,
+  'clientOrderId': 'android_MG7bwc1iopdkznD44cMG',
+  'cost': 0.0,
+  'datetime': '2021-07-15T01:41:38.799Z',
+  'fee': None,
+  'fees': [],
+  'filled': 0.0,
+  'id': '25817519984',
+  'info': {'avgPrice': '0',
+           'clientOrderId': 'android_MG7bwc1iopdkznD44cMG',
+           'closePosition': False,
+           'cumQuote': '0',
+           'executedQty': '0',
+           'orderId': '25817519984',
+           'origQty': '0.001',
+           'origType': 'LIMIT',
+           'positionSide': 'SHORT',
+           'price': '40000',
+           'priceProtect': False,
+           'reduceOnly': False,
+           'side': 'SELL',
+           'status': 'NEW',
+           'stopPrice': '0',
+           'symbol': 'BTCUSDT',
+           'time': '1626313298799',
+           'timeInForce': 'GTC',
+           'type': 'LIMIT',
+           'updateTime': '1626313298799',
+           'workingType': 'CONTRACT_PRICE'},
+  'lastTradeTimestamp': None,
+  'postOnly': False,
+  'price': 40000.0,
+  'remaining': 0.001,
+  'side': 'sell',
+  'status': 'open',
+  'stopPrice': None,
+  'symbol': 'BTC/USDT',
+  'timeInForce': 'GTC',
+  'timestamp': 1626313298799,
+  'trades': [],
+  'type': 'limit'}]
+
+  [{'amount': 0.001,
+  'average': None,
+  'clientOrderId': 'android_MG7bwc1iopdkznD44cMG',
+  'cost': 0.0,
+  'datetime': '2021-07-15T01:41:38.799Z',
+  'fee': None,
+  'fees': [],
+  'filled': 0.0,
+  'id': '25817519984',
+  'info': {'avgPrice': '0.00000',
+           'clientOrderId': 'android_MG7bwc1iopdkznD44cMG',
+           'closePosition': False,
+           'cumQuote': '0',
+           'executedQty': '0',
+           'orderId': '25817519984',
+           'origQty': '0.001',
+           'origType': 'LIMIT',
+           'positionSide': 'SHORT',
+           'price': '40000',
+           'priceProtect': False,
+           'reduceOnly': False,
+           'side': 'SELL',
+           'status': 'NEW',
+           'stopPrice': '0',
+           'symbol': 'BTCUSDT',
+           'time': '1626313298799',
+           'timeInForce': 'GTC',
+           'type': 'LIMIT',
+           'updateTime': '1626313298799',
+           'workingType': 'CONTRACT_PRICE'},
+  'lastTradeTimestamp': None,
+  'postOnly': False,
+  'price': 40000.0,
+  'remaining': 0.001,
+  'side': 'sell',
+  'status': 'open',
+  'stopPrice': None,
+  'symbol': 'BTC/USDT',
+  'timeInForce': 'GTC',
+  'timestamp': 1626313298799,
+  'trades': [],
+  'type': 'limit'}]

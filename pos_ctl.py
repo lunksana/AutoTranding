@@ -196,24 +196,39 @@ class Bn:
         params = {
             'timestamp': self.get_timestamp()
         }
-        return self._requests(RequestMethod.GET, url, True, params, True).json()
+        requests_data = self._requests(RequestMethod.GET, url, True, params, True).json()
+        return {i['asset']:float(i['balance']) for i in requests_data}
+            
 
     def fetch_free_balance(self):
-        pass
+        path = '/fapi/v2/balance'
+        url = self.base_url + path
+        params = {
+            'timestamp': self.get_timestamp()
+        }
+        requests_data = self._requests(RequestMethod.GET, url, True, params, True).json()
+        return {i['asset']:float(i['availableBalance']) for i in requests_data}
 
-    def create_order(self):
+    def create_order(self, symbol, positionSide, type):
+        
         pass
 
     def cancel_order(self):
         pass
 
     def fetch_positions(self):
-        pass
+        path = '/fapi/v2/positionRisk'
+        url = self.base_url + path
+        params = {
+            'symbol': self.symbol,
+            'timestamp': self.get_timestamp()
+        }
+        return self._requests(RequestMethod.GET, url, True, params, True)
             
 if __name__ == '__main__':
     print(Bn.base_url)
     bn = Bn('BTCUSDT', userapi.apiKey, userapi.secret)
-    pprint(bn.fetch_total_balance())
+    pprint(bn.fetch_free_balance())
     
 exit()
 

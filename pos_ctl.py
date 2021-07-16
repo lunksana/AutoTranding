@@ -57,6 +57,7 @@ class OrderType(Enum):
 class Bn:
     base_url = 'https://fapi.binance.com'
     interval_list = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M']
+    type_list = ['LIMIT', 'MARKET', 'SOTP', 'TAKE_PROFIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET']
     def __init__(self, symbol, api_key = None, secret = None, timeout = 5):
         self.symbol = symbol
         self.api_key = api_key
@@ -209,9 +210,20 @@ class Bn:
         requests_data = self._requests(RequestMethod.GET, url, True, params, True).json()
         return {i['asset']:float(i['availableBalance']) for i in requests_data}
 
-    def create_order(self, symbol, positionSide, type):
+    def create_order(self, positionSide, type, quantity, price):
+        if type not in self.type_list:
+            return
+        else:
+            path = '/fapi/v1/order'
+            url = self.base_url + path
+            params = {
+                'symbol': self.symbol,
+                'timestamp': self.get_timestamp()
+            }
+            if positionSide == 'LONG' and type != 'LIMIT' and type != 'MARKET':
+                side = 'SELL'
         
-        pass
+        
 
     def cancel_order(self):
         pass

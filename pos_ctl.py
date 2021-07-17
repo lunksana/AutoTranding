@@ -220,8 +220,15 @@ class Bn:
                 'symbol': self.symbol,
                 'timestamp': self.get_timestamp()
             }
-            if positionSide == 'LONG' and type != 'LIMIT' and type != 'MARKET':
+            if positionSide == 'LONG':
+                if type != 'LIMIT' or  type != 'MARKET':
+                    side = 'SELL'
+                side = 'BUY'
+            else:
+                if type != 'LIMIT' or  type != 'MARKET':
+                    side = 'BUY'
                 side = 'SELL'
+            params['side'] = side
         
         
 

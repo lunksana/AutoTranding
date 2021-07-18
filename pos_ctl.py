@@ -7,8 +7,8 @@ from requests.api import request
 import userapi
 import hashlib
 import hmac
+import re
 from pprint import pprint
-from enum import Enum, unique
 from urllib.parse import urlencode
 
 # 基本变量设置
@@ -21,38 +21,6 @@ from urllib.parse import urlencode
 #     'apiKey': userapi.apiKey,
 #     'secret': userapi.secret
 # })
-
-@unique
-class RequestMethod(Enum):
-    GET = "get"
-    POST = "post"
-    DELETE = "delete"
-    PUT = "put"
-
-class Interval(Enum):
-    MINUTE_1 = '1m'
-    MINUTE_3 = '3m'
-    MINUTE_5 = '5m'
-    MINUTE_15 = '15m'
-    MINUTE_30 = '30m'
-    HOUR_1 = '1h'
-    HOUR_2 = '2h'
-    HOUR_4 = '4h'
-    HOUR_6 = '6h'
-    HOUR_8 = '8h'
-    HOUR_12 = '12h'
-    DAY_1 = '1d'
-    DAY_3 = '3d'
-    WEEK_1 = '1w'
-    MOUTH_1 = '1M'
-
-class OrderType(Enum):
-    LIMIT = 'LIMIT'
-    MARKET = 'MARKET'
-    STOP = 'STOP'
-    TAKE_PROFIT = 'TAKE_PROFIT'
-    STOP_MARKET = 'STOP_MARKET'
-    TAKE_PROFIT_MARKET = 'TAKE_PROFIT_MARKET'
 
 class Bn:
     base_url = 'https://fapi.binance.com'
@@ -69,7 +37,7 @@ class Bn:
         query_str = urlencode(params)
         return hmac.new(self.secret.encode('utf-8'), query_str.encode('utf-8'), hashlib.sha256).hexdigest()
     
-    def _requests(self, Method: RequestMethod, url, headers: bool = False, params: dict = None, private: bool = False):
+    def _requests(self, Method, url, headers: bool = False, params: dict = None, private: bool = False):
         if private:
             if params:
                 url += '?' + urlencode(params)
@@ -78,9 +46,9 @@ class Bn:
             if params:
                 url += '?' + urlencode(params)
         if headers:
-            return requests.request(Method.value, url, headers = self.headers, timeout = self.timeout)
+            return requests.request(Method, url, headers = self.headers, timeout = self.timeout)
         else:
-            return requests.request(Method.value, url, timeout = self.timeout)
+            return requests.request(Method, url, timeout = self.timeout)
 
     def fetch_ticker(self, symbol = None):
         path = '/fapi/v1/ticker/price'
@@ -91,7 +59,7 @@ class Bn:
             sym = self.symbol
         params = {'symbol': sym}
         #requests_data = requests.get(url, timeout=self.timeout).json()
-        requests_data = self._requests(RequestMethod.GET, url, params = params).json()
+        requests_data = self._requests('get', url, params = params).json()
         return float(requests_data['price'])
         
     def fetchOHLCV(self, symbol, interval: str, since = None, limit: int = None):
@@ -107,25 +75,31 @@ class Bn:
             }
             if since:
                 params['startTime'] = since
-            requests_data = self._requests(RequestMethod.GET, url, False, params).json()
+            requests_data = self._requests('get', url, False, params).json()
             return [[ohl[i] for i in range(0,6)] for ohl in requests_data]
     
     # Private API
     def get_timestamp(self):
         return int(time.time() * 1000)
 
-    def listenKey(self, Method: RequestMethod):
-        path = '/fapi/v1/listenKey'
-        url = self.base_url + path
-        if Method.value != 'delete':
-            requests_data = self._requests(Method, url, True, private = False)
-            if Method.value == 'put':
-                return
-            else:
-                return requests_data.json()['listenKey']
-        else:
-            self._requests(Method, url, True, private = False)
+    def listenKey(self, option):
+        Options = {
+            'NEW': 'post', 'RENEW': 'put', 'CLOSE': 'delete'
+        }
+        if option not in Options.keys():
             return
+        else:
+            path = '/fapi/v1/listenKey'
+            url = self.base_url + path
+            if  Options[option] != 'delete':
+                requests_data = self._requests(Options[option], url, True, private = False)
+                if Options[option] == 'put':
+                    return
+                else:
+                    return requests_data.json()['listenKey']
+            else:
+                self._requests(Options[option], url, True, private = False)
+                return
 
     def fetch_open_orders(self, symbol = None, since = None, limit = None):
         path = '/fapi/v1/openOrders'
@@ -135,7 +109,7 @@ class Bn:
         }
         if symbol:
             params['symbol'] = symbol
-        return self._requests(RequestMethod.GET, url, True, params, True).json()
+        return self._requests('get', url, True, params, True).json()
 
     def fetch_orders(self, symbol = None, since = None, limit = None):
         path = '/fapi/v1/allOrders'
@@ -151,7 +125,7 @@ class Bn:
             params['startTime'] = since
         if limit:
             params['limit'] = limit
-        return self._requests(RequestMethod.GET, url, True, params, True).json()
+        return self._requests('get', url, True, params, True).json()
 
     def fetch_order_status(self, id, symbol = None):
         path = '/fapi/v1/order'
@@ -173,7 +147,7 @@ class Bn:
             params['symbol'] = symbol
         else:
             params['symbol'] = self.symbol
-        return statuses[self._requests(RequestMethod.GET, url, True, params, True).json()['status']]
+        return statuses[self._requests('get', url, True, params, True).json()['status']]
 
     def fetch_my_trades(self, symbol = None, since = None, limit = None):
         path = '/fapi/v1/userTrades'
@@ -189,7 +163,7 @@ class Bn:
             params['startTime'] = since
         if limit:
             params['limit'] = limit
-        return self._requests(RequestMethod.GET, url, True, params, True).json()
+        return self._requests('get', url, True, params, True).json()
 
     def fetch_total_balance(self):
         path = '/fapi/v2/balance'
@@ -197,7 +171,7 @@ class Bn:
         params = {
             'timestamp': self.get_timestamp()
         }
-        requests_data = self._requests(RequestMethod.GET, url, True, params, True).json()
+        requests_data = self._requests('get', url, True, params, True).json()
         return {i['asset']:float(i['balance']) for i in requests_data}
             
 
@@ -207,10 +181,10 @@ class Bn:
         params = {
             'timestamp': self.get_timestamp()
         }
-        requests_data = self._requests(RequestMethod.GET, url, True, params, True).json()
+        requests_data = self._requests('get', url, True, params, True).json()
         return {i['asset']:float(i['availableBalance']) for i in requests_data}
 
-    def create_order(self, positionSide, type, quantity, price):
+    def create_order(self, positionSide, type, quantity, price: float):
         if type not in self.type_list:
             return
         else:
@@ -220,6 +194,36 @@ class Bn:
                 'symbol': self.symbol,
                 'timestamp': self.get_timestamp()
             }
+            timeInForce_is_needed = False
+            quantity_is_needed = False
+            price_is_needed = False
+            stopPrice_is_needed = False
+            if type == 'LIMIT':
+                timeInForce_is_needed = True
+                quantity_is_needed = True
+                price_is_needed = True
+            elif type == 'MARKET':
+                quantity_is_needed = True
+            elif type == 'STOP' or type == 'TAKE_PROFIT':
+                quantity_is_needed = True
+                price_is_needed = True
+                stopPrice_is_needed = True
+            elif type == 'STOP_MARKET' or type == 'TAKE_PROFIT_MARKET':
+                stopPrice_is_needed = True
+            if timeInForce_is_needed:
+                params['timeInForce'] = 'GTC'
+            if quantity_is_needed:
+                if isinstance(quantity, str) and re.match(r'[0-9]+%$', quantity):
+                    quantity = round(abs(self.fetch_positions(positionSide)[0]['positionAmt']) * float(quantity[0:-1]) / 100, 3)
+                elif isinstance(quantity, float) or isinstance(quantity, int):
+                    quantity = round(quantity, 3)
+                else:
+                    return
+                params['quantity'] = quantity
+            if price_is_needed:
+                params['price'] = price
+            if stopPrice_is_needed:
+                params['stopPrice'] = price            
             if positionSide == 'LONG':
                 if type != 'LIMIT' or  type != 'MARKET':
                     side = 'SELL'
@@ -229,25 +233,53 @@ class Bn:
                     side = 'BUY'
                 side = 'SELL'
             params['side'] = side
+            params['positionSide'] = positionSide
+            params['type'] = type
+            return self._requests('post', url, True, params, True).json()
         
         
 
-    def cancel_order(self):
-        pass
+    def cancel_order(self, id):
+        path = '/fapi/v1/order'
+        url = self.base_url + path
+        params = {
+            'symbol': self.symbol,
+            'timestamp': self.get_timestamp()
+        }
+        if isinstance(id, str) and id.isdigit():
+            params['orderId'] = id
+        else:
+            return
+        return self._requests('delete', url, True, params, True).json()
+    
+    def cancel_all_orders(self):
+        path = '/fapi/v1/allOpenOrders'
+        url = self.base_url + path
+        params = {
+            'symbol': self.symbol,
+            'timestamp': self.get_timestamp()
+        }
+        return self._requests('delete', url, True, params, True).json()
+        
 
-    def fetch_positions(self):
+    def fetch_positions(self, positionSide = None):
         path = '/fapi/v2/positionRisk'
         url = self.base_url + path
         params = {
             'symbol': self.symbol,
             'timestamp': self.get_timestamp()
         }
-        return self._requests(RequestMethod.GET, url, True, params, True)
-            
+        requests_data = self._requests('get', url, True, params, True).json()
+        if positionSide:
+            return [pos for pos in requests_data if pos['positionSide'] == positionSide]
+        else:
+            return requests_data
+        
 if __name__ == '__main__':
     print(Bn.base_url)
     bn = Bn('BTCUSDT', userapi.apiKey, userapi.secret)
     pprint(bn.fetch_free_balance())
+    pprint(bn.cancel_all_orders())
     
 exit()
 

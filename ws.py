@@ -4,53 +4,51 @@
 
 import websocket
 import time
-import requests
 import json
-import userapi
-import threading
 
-try_nu = 10
-def on_open(ws):
-    print('on open')
-    data = {
-        'method': 'SUBSCRIBE',
-        'params': [
-            'btcusdt@kline_15m',
-            'btcusdt@markPrice@1s',
-            'btcusdt@aggTrade',
-            'btcusdt@depth5@100ms',
-            'btcusdt@miniTicker',
-            'btcusdt_perpetual@continuousKline_15m'
-        ],
-        'id': 123
-    }
-    ws.send(json.dumps(data))
+class Ws:
+    def __init__(self, ws_url, symbol):
+        self.ws_url = ws_url
+        self.symbol = symbol
 
-def on_close(ws):
-    print('On close')
+    def on_open(ws):
+        print('on open')
+        data = {
+            'method': 'SUBSCRIBE',
+            'params': [
+                'btcusdt@kline_15m',
+                'btcusdt@markPrice@1s',
+                'btcusdt@aggTrade',
+                'btcusdt@depth5@100ms',
+                'btcusdt@miniTicker',
+                'btcusdt_perpetual@continuousKline_15m'
+            ],
+            'id': 123
+        }
+        ws.send(json.dumps(data))
 
-def on_message(ws, msg):
-    msg = json.loads(msg)
-    print(msg)
-    print(len(msg))
-    global try_nu
-    try_nu -= 1
-    if try_nu < 1:
+    def on_close(ws):
+        print('On close')
+
+    def on_message(ws, msg):
+        msg = json.loads(msg)
+        print(msg)
+        print(len(msg))
         ws.close()
-     
-    #enumerate(msg)
         
+        #enumerate(msg)
+            
 
-def on_error(ws, error):
-    print(f'on error: {error}')
-    
-def on_ping(ws, msg):
-    print('get a ping!')
-    #ws.pong()
-    ws.send('pong', websocket.ABNF.OPCODE_PONG)
-    time.sleep(10)
-    ws.close()
-    
+    def on_error(ws, error):
+        print(f'on error: {error}')
+        
+    def on_ping(ws, msg):
+        print('get a ping!')
+        #ws.pong()
+        ws.send('pong', websocket.ABNF.OPCODE_PONG)
+        time.sleep(10)
+        ws.close()
+        
 
 
 stream = 'btcusdt@kline_15m/btcusdt@markPrice@1s'

@@ -11,7 +11,18 @@ class Ws:
         self.ws_url = ws_url
         self.symbol = symbol
 
-    def on_open(ws):
+    def start(self):
+        ws = websocket.WebSocketApp(
+            self.ws_url,
+            on_close = self.on_close,
+            on_message = self.on_message,
+            on_error = self.on_error,
+            on_ping = self.on_ping
+        )
+        ws.on_open = self.on_open
+        ws.run_forever(ping_interval = 15)
+
+    def on_open(self, ws):
         print('on open')
         data = {
             'method': 'SUBSCRIBE',
@@ -27,10 +38,10 @@ class Ws:
         }
         ws.send(json.dumps(data))
 
-    def on_close(ws):
+    def on_close(self, ws):
         print('On close')
 
-    def on_message(ws, msg):
+    def on_message(self, ws, msg):
         msg = json.loads(msg)
         print(msg)
         print(len(msg))
@@ -39,10 +50,10 @@ class Ws:
         #enumerate(msg)
             
 
-    def on_error(ws, error):
+    def on_error(self, ws, error):
         print(f'on error: {error}')
         
-    def on_ping(ws, msg):
+    def on_ping(self, ws, msg):
         print('get a ping!')
         #ws.pong()
         ws.send('pong', websocket.ABNF.OPCODE_PONG)

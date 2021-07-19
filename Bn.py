@@ -283,21 +283,19 @@ class Bn:
             else:
                 positionSide = 'SHORT'
                 amt = round(abs(amt), 3)
-            pos_order = self.create_order(positionSide, type, amt, price, amt)
-        return pos_order['orderId']
+        return self.create_order(positionSide, type, amt, price, amt)
+       
     
     def create_stop_order(self, price, pos_side, amt = None):    
         if amt:
             type = 'STOP'
         else:
             type = 'STOP_MARKET'
-        stop_order = self.create_order(pos_side, type, price, amt)
-        return stop_order['orderId']
+        return self.create_order(pos_side, type, price, amt)
     
     def create_tpsl_order(self, price, pos_side, amt = None):
         if amt:
             type = 'TAKE_PROFIT'
         else:
             type = 'TAKE_PROFIT_MARKET'
-        tpsl_order = self.create_order(pos_side, type, amt, price)
-        return tpsl_order['orderId']            
+        return self.create_order(pos_side, type, amt, price)          

@@ -5,38 +5,35 @@
 import websocket
 import time
 import json
+import threading
 
 class Ws:
     def __init__(self, ws_url, symbol):
         self.ws_url = ws_url
         self.symbol = symbol
+        self.isConnected = threading.Event()
+        self._recounect = threading.Event()
+        self._reconnect_interval = 3
+        self.ws = None
 
-    def start(self):
-        ws = websocket.WebSocketApp(
+
+    def wsConnect(self):
+        self.ws = websocket.WebSocketApp(
             self.ws_url,
             on_close = self.on_close,
             on_message = self.on_message,
             on_error = self.on_error,
             on_ping = self.on_ping
         )
-        ws.on_open = self.on_open
-        ws.run_forever(ping_interval = 15)
+        self.ws.on_open = self.on_open
+        self.ws.run_forever(ping_interval = 15)
+        self.isConnected.set()
+    
+    def wsReconnect(self):
+        pass
 
     def on_open(self, ws):
         print('on open')
-        data = {
-            'method': 'SUBSCRIBE',
-            'params': [
-                'btcusdt@kline_15m',
-                'btcusdt@markPrice@1s',
-                'btcusdt@aggTrade',
-                'btcusdt@depth5@100ms',
-                'btcusdt@miniTicker',
-                'btcusdt_perpetual@continuousKline_15m'
-            ],
-            'id': 123
-        }
-        ws.send(json.dumps(data))
 
     def on_close(self, ws):
         print('On close')
@@ -59,6 +56,25 @@ class Ws:
         ws.send('pong', websocket.ABNF.OPCODE_PONG)
         time.sleep(10)
         ws.close()
+    
+    def sub_stream(self, stream):
+        if self.isConnected.is_set():
+            data = {
+                'method': 'SUBSCRIBE',
+                'params': [
+                    'btcusdt@kline_15m',
+                    'btcusdt@markPrice@1s',
+                    'btcusdt@aggTrade',
+                    'btcusdt@depth5@100ms',
+                    'btcusdt@miniTicker',
+                    'btcusdt_perpetual@continuousKline_15m'
+                ],
+                'id': 123
+            }
+            self.ws.send(json.dumps(data))
+        else:
+            self._recounect.set()
+
         
 
 
@@ -71,21 +87,21 @@ stream = 'btcusdt@kline_15m/btcusdt@markPrice@1s'
 #     ],
 #     'id': 123
 # }
-wss_url = 'wss://fstream.binance.com/ws/btcusdt@kline_15m' # 15分钟K线
-wss_url = 'wss://fstream.binance.com/ws/btcusdt@markPrice@1s' # 标记价格
-wss_url = 'wss://fstream.binance.com/ws/btcusdt@miniTicker' # 精简ticker
-wss_url = 'wss://fstream.binance.com/ws/FbIDMnfvr0fLszyZ4Q7nQHyiGrhqXIMv3i3DovSMudvI5QlvFqOCeSHGyeDD83jZ' # 用户账户信息订阅
-wss_url = f'wss://fstream.binance.com/ws/'
-ws = websocket.WebSocketApp(
-    wss_url,
-    on_open = on_open,
-    on_close = on_close,
-    on_message = on_message,
-    on_error = on_error,
-    on_ping = on_ping
-)
+# wss_url = 'wss://fstream.binance.com/ws/btcusdt@kline_15m' # 15分钟K线
+# wss_url = 'wss://fstream.binance.com/ws/btcusdt@markPrice@1s' # 标记价格
+# wss_url = 'wss://fstream.binance.com/ws/btcusdt@miniTicker' # 精简ticker
+# wss_url = 'wss://fstream.binance.com/ws/FbIDMnfvr0fLszyZ4Q7nQHyiGrhqXIMv3i3DovSMudvI5QlvFqOCeSHGyeDD83jZ' # 用户账户信息订阅
+# wss_url = f'wss://fstream.binance.com/ws/'
+# ws = websocket.WebSocketApp(
+#     wss_url,
+#     on_open = on_open,
+#     on_close = on_close,
+#     on_message = on_message,
+#     on_error = on_error,
+#     on_ping = on_ping
+# )
 
-ws.run_forever(ping_interval = 15)
+# ws.run_forever(ping_interval = 15)
 
 '''
 {

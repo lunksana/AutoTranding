@@ -12,8 +12,9 @@ class Ws:
     def __init__(self, ws_url, symbol):
         self.ws_url = ws_url
         self.symbol = symbol
+        self.ws_active = False
         self.isConnected = threading.Event()
-        self._reCounect = threading.Event()
+        self._reConnect = threading.Event()
         self._disConnect = threading.Event()
         self._reConnects = 3
         self.ws = None
@@ -29,7 +30,6 @@ class Ws:
         )
         self.ws.on_open = self.on_open
         self.ws.run_forever(ping_interval = 15)
-        self.isConnected.set()
     
     def wsReconnect(self):
         if self.isConnected.is_set():
@@ -42,15 +42,18 @@ class Ws:
     
     def on_open(self, ws):
         print('on open')
+        self.isConnected.set()
+        self._reConnect.clear()
 
-    def on_close(self, ws):
-        print('On close')
+    def on_close(self, ws, close_code):
+        print('on_close args:')
+        if close_code:
+            print(str(close_code))
+            self._disConnect.set()
 
     def on_message(self, ws, msg):
         msg = json.loads(msg)
         print(msg)
-        print(len(msg))
-        ws.close()
         
         #enumerate(msg)
             
@@ -62,8 +65,6 @@ class Ws:
         print('get a ping!')
         #ws.pong()
         ws.send('pong', websocket.ABNF.OPCODE_PONG)
-        time.sleep(10)
-        ws.close()
     
     def sub_stream(self, stream):
         if self.isConnected.is_set():
@@ -81,7 +82,10 @@ class Ws:
             }
             self.ws.send(json.dumps(data))
         else:
-            self._recounect.set()
+            self._reCounect.set()
+    
+    def run(self):
+        self.ws_active = True
 
         
 

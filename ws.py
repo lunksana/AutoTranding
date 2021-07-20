@@ -1,4 +1,5 @@
 # 测试交易所使用Websocket获取交易信息
+# a websocket client for binance 
 
 
 
@@ -12,8 +13,9 @@ class Ws:
         self.ws_url = ws_url
         self.symbol = symbol
         self.isConnected = threading.Event()
-        self._recounect = threading.Event()
-        self._reconnect_interval = 3
+        self._reCounect = threading.Event()
+        self._disConnect = threading.Event()
+        self._reConnects = 3
         self.ws = None
 
 
@@ -30,8 +32,14 @@ class Ws:
         self.isConnected.set()
     
     def wsReconnect(self):
-        pass
+        if self.isConnected.is_set():
+            pass
 
+    def connectCheck(self):
+        if self.ws:
+            if self.isConnected.is_set():
+                pass
+    
     def on_open(self, ws):
         print('on open')
 

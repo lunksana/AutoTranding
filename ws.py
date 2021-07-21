@@ -30,6 +30,7 @@ class Ws:
         )
         self.ws.on_open = self.on_open
         self.ws.run_forever(ping_interval = 15)
+        self.ws_active = True
     
     def wsReconnect(self):
         if self.isConnected.is_set():
@@ -60,6 +61,7 @@ class Ws:
 
     def on_error(self, ws, error):
         print(f'on error: {error}')
+        self._disConnect.set()
         
     def on_ping(self, ws, msg):
         print('get a ping!')
@@ -82,7 +84,10 @@ class Ws:
             }
             self.ws.send(json.dumps(data))
         else:
-            self._reCounect.set()
+            self._reConnect.set()
+            
+    def sub_userinfo(self):
+        pass
     
     def run(self):
         self.ws_active = True

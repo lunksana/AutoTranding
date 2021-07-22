@@ -95,15 +95,19 @@ class Ws:
         else:
             self._reConnect.set()
 
-        def sub_userinfo(self):
-            pass
-    
+        def sub_userinfo(self, listen_key):
+            if isinstance(listen_key, str):
+                url = self.ws_url + '/' + listen_key
+                
+
     def run(self):
         self.ws_active = True
         threading.Thread(target = self.wsConnect, name = 'ws_push').start()
         threading.Thread(target = self.sub_stream).start()
         if threading.enumerate():
             self.isConnected.set()
+            self._reConnects.clear()
+            self._disConnect.clear()
 
         
 

@@ -12,6 +12,7 @@ class Ws:
     def __init__(self, ws_url, symbol):
         self.ws_url = ws_url
         self.symbol = symbol
+        self.params = []
         self.ws_active = False
         self.isConnected = threading.Event()
         self._reConnect = threading.Event()
@@ -62,12 +63,20 @@ class Ws:
     def on_error(self, ws, error):
         print(f'on error: {error}')
         self._disConnect.set()
-        
+
     def on_ping(self, ws, msg):
         print('get a ping!')
         #ws.pong()
         ws.send('pong', websocket.ABNF.OPCODE_PONG)
-    
+
+    def get_params(self, stream, interval = None):
+        symbol = self.symbol.lower()
+        if stream == 'kline':
+            self.params.append(
+                symbol + '@' + stream + interval
+            )
+        return
+
     def sub_stream(self, stream):
         if self.isConnected.is_set():
             data = {
@@ -85,12 +94,16 @@ class Ws:
             self.ws.send(json.dumps(data))
         else:
             self._reConnect.set()
-            
-    def sub_userinfo(self):
-        pass
+
+        def sub_userinfo(self):
+            pass
     
     def run(self):
         self.ws_active = True
+        threading.Thread(target = self.wsConnect, name = 'ws_push').start()
+        threading.Thread(target = self.sub_stream).start()
+        if threading.enumerate():
+            self.isConnected.set()
 
         
 

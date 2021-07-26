@@ -95,9 +95,9 @@ class Ws:
         else:
             self._reConnect.set()
 
-        def sub_userinfo(self, listen_key):
-            if isinstance(listen_key, str):
-                url = self.ws_url + '/' + listen_key
+    def sub_userinfo(self, listen_key):
+        if isinstance(listen_key, str):
+            url = self.ws_url + '/' + listen_key
                 
 
     def run(self):
